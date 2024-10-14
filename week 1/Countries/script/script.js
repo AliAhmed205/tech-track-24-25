@@ -1307,23 +1307,34 @@ southAsianCountries = southAsianCountriesFunction(countries);
 
 // calculate the total population of South Asia
 // southAsianPopulation =
-function southAsianPopulationFunction(myCountry){
-  return myCountry.filter(southAsian => southAsian.region === "South Asia");
-  
-  SouthAsia.population
-
-  southAsianPopulation = totalPopulation
+function calculateSouthAsianPopulation(myCountries) {
+  return myCountries.reduce((total, country) => {
+      return total + Math.round(country.population)
+  }, 0)
 }
+
+southAsianPopulation = calculateSouthAsianPopulation(southAsianCountries);
+// Source for reduce(): https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce
+
+
 
 // calculate the maximum life expectancy of a country in South Asia
 // soutAsianMaxLifeExpectancy =
+function southAsianMaxLifeExpectancyFunction(myCountries){
+  return myCountries.reduce((max, country) => {
+    return Math.max(max, Math.round(country.lifeExpectancy))
+  }, 0)
+}
 
+
+southAsianMaxLifeExpectancy = southAsianMaxLifeExpectancyFunction(southAsianCountries)
+// Source for Math.max: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/max
 
 
 console.log("South Asia")
 console.log(southAsianCountries)
 console.log(southAsianPopulation)
-// console.log(southAsianMaxLifeExpectancy)
+console.log(southAsianMaxLifeExpectancy)
 
 
 
