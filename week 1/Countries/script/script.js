@@ -1282,18 +1282,27 @@ let southAsianMaxLifeExpectancy
 function normalizeCountry(myCountry) {
   // here your code
 
+    const countryName = myCountry.name
+    const region = myCountry.region
+    const income = Math.floor(myCountry.income)
     const avgIncome = Math.round(myCountry.income * 100) / 100
     
     // Ik heb de leeftijd volledig afgerond, want dat vond ik logischer.
     const lifeExp = Math.round(myCountry.lifeExpectancy)
 
-  return { "avgIncome": avgIncome, "lifeExp": lifeExp}
+  return { "countryName": countryName, "region": region, "income": income,  "avgIncome": avgIncome, "lifeExp": lifeExp}
 }
 
-console.log(normalizeCountry(countries[0]));
-
-
 // format array countries
+let normalizedCountries = countries.map(normalizeCountry)
+console.log(normalizedCountries);
+
+
+
+
+const countriesArray = countries.filter(country => country.name)
+
+console.log(countriesArray)
 
 // Fill array southAsianCountries with  the objects of array countries representing countries in South Asia
 // 
@@ -1306,10 +1315,12 @@ console.log(normalizeCountry(countries[0]));
 // }
 
 // Implicit
-const southAsianCountriesFunction = myCountries => 
-  myCountries.filter(({region}) => region == 'South Asia')
+const southAsianCountriesFunction = (country) => country.region === 'South Asia';
 
-southAsianCountries = southAsianCountriesFunction(countries);
+
+// southAsianCountries = southAsianCountriesFunction(countries);
+
+southAsianCountries = countries.filter(southAsianCountriesFunction);
 
 // calculate the total population of South Asia
 // southAsianPopulation =
