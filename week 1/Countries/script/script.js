@@ -1298,20 +1298,36 @@ console.log(normalizeCountry(countries[0]));
 // Fill array southAsianCountries with  the objects of array countries representing countries in South Asia
 // 
 
-function southAsianCountriesFunction(myCountry) {
-  return myCountry.filter(southAsian => 
-    southAsian.region === "South Asia");
-}
+// Explicit
+
+// function southAsianCountriesFunction(myCountry) {
+//   return myCountry.filter(southAsian => 
+//     southAsian.region === "South Asia");
+// }
+
+// Implicit
+const southAsianCountriesFunction = myCountries => 
+  myCountries.filter(({region}) => region == 'South Asia')
 
 southAsianCountries = southAsianCountriesFunction(countries);
 
 // calculate the total population of South Asia
 // southAsianPopulation =
-function calculateSouthAsianPopulation(myCountries) {
-  return myCountries.reduce((total, country) => {
-      return total + Math.round(country.population)
-  }, 0)
-}
+
+// Explicit
+
+// function calculateSouthAsianPopulation(myCountries) {
+//   return myCountries.reduce((total, country) => {
+//       return total + Math.round(country.population)
+//   }, 0)
+// }
+
+// Implicit 
+const calculateSouthAsianPopulation = myCountries =>
+  myCountries.reduce((total, { population }) => total + Math.round(population), 0);
+
+
+
 
 southAsianPopulation = calculateSouthAsianPopulation(southAsianCountries);
 // Source for reduce(): https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce
@@ -1320,11 +1336,16 @@ southAsianPopulation = calculateSouthAsianPopulation(southAsianCountries);
 
 // calculate the maximum life expectancy of a country in South Asia
 // soutAsianMaxLifeExpectancy =
-function southAsianMaxLifeExpectancyFunction(myCountries){
-  return myCountries.reduce((max, country) => {
-    return Math.max(max, Math.round(country.lifeExpectancy))
-  }, 0)
-}
+
+// function southAsianMaxLifeExpectancyFunction(myCountries){
+//   return myCountries.reduce((max, country) => {
+//     return Math.max(max, Math.round(country.lifeExpectancy))
+//   }, 0)
+// }
+
+const southAsianMaxLifeExpectancyFunction = myCountries =>
+  myCountries.reduce((max, { lifeExpectancy }) => Math.max(max, Math.round(lifeExpectancy)), 0);
+
 
 
 southAsianMaxLifeExpectancy = southAsianMaxLifeExpectancyFunction(southAsianCountries)
