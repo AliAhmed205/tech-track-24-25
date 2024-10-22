@@ -1280,14 +1280,13 @@ let southAsianMaxLifeExpectancy
 // the values of attributes income and lifeExpectancy show 2 decimals. 
 // the name of attribute income is changed to avgIncome
 function normalizeCountry(myCountry) {
-  // here your code
 
     const countryName = myCountry.name
     const region = myCountry.region
+
     const income = Math.floor(myCountry.income)
     const avgIncome = Math.round(myCountry.income * 100) / 100
-    
-    // Ik heb de leeftijd volledig afgerond, want dat vond ik logischer.
+
     const lifeExp = Math.round(myCountry.lifeExpectancy)
 
   return { "countryName": countryName, "region": region, "income": income,  "avgIncome": avgIncome, "lifeExp": lifeExp}

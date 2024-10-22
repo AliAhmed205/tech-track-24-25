@@ -58,17 +58,17 @@ const data = [
 */
 
 // function transformArrayOfObj() returns an Array of objects
-function transformArrOfObj(myData) {
-  /* Write your functionality here and return the result */
-  return myData.map(person =>{
-    
-    const name = person.name.charAt(0).toUpperCase() + person.name.slice(1).toLowerCase()
-    const age = Number(person.age)
-    const residence = person.residence.charAt(0).toUpperCase() + person.residence.slice(1).toLowerCase
-    const job = person.work.employer
+  function transformArrOfObj(myData) {
+    /* Write your functionality here and return the result */
+    return myData.map(person =>{
+      
+      const name = person.name.charAt(0).toUpperCase() + person.name.slice(1).toLowerCase()
+      const age = Number(person.age)
+      const residence = person.residence.charAt(0).toUpperCase() + person.residence.slice(1).toLowerCase
+      const job = person.work.employer
 
-    return { name, age, residence, job }
-  })
-}
+      return { name, age, residence, job }
+    })
+  }
 
-console.log(transformArrOfObj(data))
+  console.log(transformArrOfObj(data))
