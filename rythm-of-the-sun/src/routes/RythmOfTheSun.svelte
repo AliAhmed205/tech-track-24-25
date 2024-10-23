@@ -38,7 +38,6 @@
     drawSolarTerminator(); // Teken met huidige tijd
 
     // Voeg een click event listener toe
-    canvas.addEventListener("click", handleClick);
   });
 
   function drawSolarTerminator() {
@@ -104,19 +103,6 @@
     return [longitude + 180, -latitude];
   }
 
-  function handleClick(event) {
-    const coords = d3.pointer(event, canvas); // Verkrijg muisklikcoördinaten
-    const [longitude, latitude] = projection.invert(coords); // Zet om naar geografische coördinaten
-
-    // Zoek het land dat is aangeklikt
-    const clickedLand = landFeatures.features.find((feature) => {
-      return d3.geoContains(feature, [longitude, latitude]);
-    });
-
-    if (clickedLand) {
-      alert(`Je hebt geklikt op: ${clickedLand.properties.name}`);
-    }
-  }
 
   // Functie om geselecteerde datum bij te werken
   function updateSelectedDate(event) {
