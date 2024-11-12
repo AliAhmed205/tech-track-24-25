@@ -1,7 +1,4 @@
 <script>
-  import RythmOfTheSun from './RythmOfTheSun.svelte';
+  import * as d3 from "d3"; 
 </script>
 
-<main>
-<RythmOfTheSun />
-</main>
