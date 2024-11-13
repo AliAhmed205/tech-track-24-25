@@ -2,9 +2,25 @@
   import { select, json, geoPath, tsv, geoNaturalEarth1 } from "d3";
   import { onMount } from "svelte";
   import { feature } from "topojson-client";
+  import { initKaart, toonGeselecteerdLand } from '../lib/toonLand'; 
 
   let svgElement, wereldProjectie, kaartPadGenerator, landTooltip;
-  let geselecteerdeLand = null; 
+
+  function haalHoofdstadOp(landId) {
+    fetch('https://raw.githubusercontent.com/samayo/country-json/refs/heads/master/src/country-by-capital-city.json')
+      .then(response => response.json())  
+      .then(data => {
+        const land = data.find(item => item.country === landId);
+        if (land) {
+          console.log(`The capital of ${landId} is ${land.city}`);  
+        } else {
+          console.log(`No capital found for ${landId}`);
+        }
+      })
+      .catch(error => {
+        console.error("Er is een fout opgetreden bij het ophalen van de hoofdsteden:", error);
+      });
+  }
 
   function schaalKaartOpnieuw() {
     const bounds = kaartPadGenerator.bounds({ type: 'Sphere' });
@@ -21,35 +37,12 @@
       .attr("height", height);
   }
 
-  function toonGeselecteerdLand(d) {
-    if (geselecteerdeLand === d) {
-      svgElement.selectAll("path.land").style("opacity", 1);
-      svgElement.transition().duration(500).attr("viewBox", `${0} ${0} ${svgElement.attr("width")} ${svgElement.attr("height")}`);
-      geselecteerdeLand = null; 
-    } else {
-      svgElement.selectAll("path.land").style("opacity", (land) => (land === d ? 1 : 0));
-
-      const [[x0, y0], [x1, y1]] = kaartPadGenerator.bounds(d);
-      const landBreedte = x1 - x0;
-      const landHoogte = y1 - y0;
-
-      const scaleFactor = 1.5; // Bepaal de schaalfactor voor vergroting
-      const viewBoxX = x0 - (landBreedte * (scaleFactor - 1)) / 2;
-      const viewBoxY = y0 - (landHoogte * (scaleFactor - 1)) / 2;
-
-      svgElement
-        .transition()
-        .duration(500) 
-        .attr("viewBox", `${viewBoxX} ${viewBoxY} ${landBreedte * scaleFactor} ${landHoogte * scaleFactor}`);
-      
-      geselecteerdeLand = d; // Zet het geselecteerde land
-    }
-  }
-
   onMount(() => {
     svgElement = select("svg");
     wereldProjectie = geoNaturalEarth1();
     kaartPadGenerator = geoPath().projection(wereldProjectie);
+
+    initKaart(svgElement, kaartPadGenerator);
 
     landTooltip = select("body").append("div").attr("class", "tooltip");
 
@@ -69,7 +62,8 @@
         .append('path')
         .datum({ type: 'Sphere' })
         .attr('d', kaartPadGenerator)
-        .attr('class', "Sphere");
+        .attr('class', "Sphere")
+        .style("fill", "url(#sphere-gradient)")
 
       svgElement
         .selectAll("path.land")
@@ -79,7 +73,6 @@
         .attr("d", kaartPadGenerator)
         .attr("fill", "lightgreen")
         .attr("stroke", "black")
-        .style("filter", "drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5))")
         .on("mouseover", (event, land) => {
           landTooltip.style("visibility", "visible")
             .text(landNamen[land.id])
@@ -94,7 +87,10 @@
           landTooltip.style("visibility", "hidden");
         })
         .on("click", (event, land) => {
-          toonGeselecteerdLand(land);  // Roep de toggle-functie aan
+          toonGeselecteerdLand(land); 
+          console.log(landNamen[land.id]);
+
+          haalHoofdstadOp(landNamen[land.id]);
         });
 
       schaalKaartOpnieuw();
@@ -107,5 +103,15 @@
 </script>
 
 <section class="kaart">
-  <svg style="max-width: 100%; height: auto;"></svg>
+  <svg style="max-width: 90%; height: auto; margin: auto; border-radius: 3rem; padding: 2rem;">
+    <defs>
+      <radialGradient id="sphere-gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+        <stop offset="0%" style="stop-color: #1f3c8f; stop-opacity: 1" />
+        <stop offset="90%" style="stop-color: #4e7ad8; stop-opacity: 1" />
+        <stop offset="100%" style="stop-color: #3ba7ff; stop-opacity: 1" />
+      </radialGradient>
+    </defs>
+
+    <path class="Sphere" />
+  </svg>
 </section>
