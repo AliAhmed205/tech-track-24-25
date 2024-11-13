@@ -69,6 +69,14 @@ svg {
 }
 
 
+h2 {
+  color: white;
+}
+
+p {
+  color: white;
+}
+
 .text {
   padding: 1rem;
   color: #00d0ff;

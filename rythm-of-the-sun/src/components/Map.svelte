@@ -7,20 +7,22 @@
   let svgElement, wereldProjectie, kaartPadGenerator, landTooltip;
 
   function haalHoofdstadOp(landId) {
-    fetch('https://raw.githubusercontent.com/samayo/country-json/refs/heads/master/src/country-by-capital-city.json')
-      .then(response => response.json())  
-      .then(data => {
-        const land = data.find(item => item.country === landId);
-        if (land) {
-          console.log(`The capital of ${landId} is ${land.city}`);  
-        } else {
-          console.log(`No capital found for ${landId}`);
-        }
-      })
-      .catch(error => {
-        console.error("Er is een fout opgetreden bij het ophalen van de hoofdsteden:", error);
-      });
-  }
+  fetch('https://raw.githubusercontent.com/samayo/country-json/refs/heads/master/src/country-by-capital-city.json')
+    .then(response => response.json())  
+    .then(data => {
+      const land = data.find(item => item.country === landId);
+      if (land) {
+        document.querySelector('p').textContent = `📍 ${land.city}`;
+      } else {
+        document.querySelector('p').textContent = `No capital found for ${landId}`;
+      }
+    })
+    .catch(error => {
+      console.error("Er is een fout opgetreden bij het ophalen van de hoofdsteden:", error);
+      document.querySelector('p').textContent = "Error fetching capital city.";
+    });
+}
+
 
   function schaalKaartOpnieuw() {
     const bounds = kaartPadGenerator.bounds({ type: 'Sphere' });
@@ -89,7 +91,7 @@
         .on("click", (event, land) => {
           toonGeselecteerdLand(land); 
           console.log(landNamen[land.id]);
-
+          document.querySelector('h2').textContent = landNamen[land.id]
           haalHoofdstadOp(landNamen[land.id]);
         });
 
@@ -103,6 +105,8 @@
 </script>
 
 <section class="kaart">
+  <h2></h2>
+  <p></p>
   <svg style="max-width: 90%; height: auto; margin: auto; border-radius: 3rem; padding: 2rem;">
     <defs>
       <radialGradient id="sphere-gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
