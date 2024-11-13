@@ -1,4 +1,7 @@
 <script>
-  import * as d3 from "d3"; 
+  import Map from "../components/Map.svelte";
+  import "../components/Map.css"
 </script>
+
+<Map />
 
