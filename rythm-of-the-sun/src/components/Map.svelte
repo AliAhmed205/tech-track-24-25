@@ -2,27 +2,99 @@
   import { select, json, geoPath, tsv, geoNaturalEarth1 } from "d3";
   import { onMount } from "svelte";
   import { feature } from "topojson-client";
-  import { initKaart, toonGeselecteerdLand } from '../lib/toonLand'; 
+  import { initKaart, toonGeselecteerdLand } from '../lib/toonLand';
 
   let svgElement, wereldProjectie, kaartPadGenerator, landTooltip;
+  let city = "";
+  let timezone = "";
+  let sunrise;
+  let sunset;
+
+  const SUNRISE_SUNSET_API_URL = 'https://api.sunrisesunset.io/json';
+  const GEO_NAMES_USERNAME = 'aliahmed205';
+
+  function parseTimeToUTC(timeString) {
+      const [time, modifier] = timeString.split(' ');
+      let [hours, minutes, seconds] = time.split(':').map(Number);
+      if (modifier === 'PM' && hours < 12) hours += 12;
+      if (modifier === 'AM' && hours === 12) hours = 0;
+      const date = new Date();
+      date.setUTCHours(hours, minutes, seconds || 0, 0);
+      return date;
+  }
+
+  async function fetchTimeZone(latitude, longitude) {
+      const response = await fetch(`http://api.geonames.org/timezoneJSON?lat=${latitude}&lng=${longitude}&username=${GEO_NAMES_USERNAME}`);
+      const data = await response.json();
+      if (data && data.timezoneId) {
+          timezone = data.timezoneId;
+          return timezone;
+      } else {
+          console.error("Kon de tijdzone niet ophalen.");
+      }
+  }
+
+  async function fetchCoordinates(city) {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?q=${city}&format=json&addressdetails=1`);
+      const data = await response.json();
+      if (data && data.length > 0) {
+          const { lat, lon } = data[0];
+          fetchSunriseSunset(lat, lon);
+      } else {
+          console.error("Kon geen locatie vinden voor de ingevoerde stad.");
+      }
+  }
+
+  async function fetchSunriseSunset(latitude, longitude) {
+      try {
+          const response = await fetch(`${SUNRISE_SUNSET_API_URL}?lat=${latitude}&lng=${longitude}&timezone=UTC`);
+          const data = await response.json();
+          if (data.status === 'OK') {
+              await fetchTimeZone(latitude, longitude);
+              sunrise = parseTimeToUTC(data.results.sunrise);
+              sunset = parseTimeToUTC(data.results.sunset);
+
+              try {
+                const localSunrise = new Date(sunrise.toLocaleString('en-US', { timeZone: timezone }));
+                const localSunset = new Date(sunset.toLocaleString('en-US', { timeZone: timezone }));
+
+                sunrise = localSunrise.toLocaleTimeString();
+                sunset = localSunset.toLocaleTimeString();
+              } catch (error) {
+                console.error("Fout bij omzetten van tijd:", error);
+              }
+          } else {
+              console.error("Kon zonsopgang/zonsondergang gegevens niet ophalen:", data);
+          }
+      } catch (error) {
+          console.error("Er ging iets mis:", error);
+      }
+  }
+
+  function searchCity() {
+      if (city) {
+          fetchCoordinates(city);
+      }
+  }
 
   function haalHoofdstadOp(landId) {
-  fetch('https://raw.githubusercontent.com/samayo/country-json/refs/heads/master/src/country-by-capital-city.json')
-    .then(response => response.json())  
-    .then(data => {
-      const land = data.find(item => item.country === landId);
-      if (land) {
-        document.querySelector('p').textContent = `📍 ${land.city}`;
-      } else {
-        document.querySelector('p').textContent = `No capital found for ${landId}`;
-      }
-    })
-    .catch(error => {
-      console.error("Er is een fout opgetreden bij het ophalen van de hoofdsteden:", error);
-      document.querySelector('p').textContent = "Error fetching capital city.";
-    });
-}
-
+    fetch('https://raw.githubusercontent.com/samayo/country-json/refs/heads/master/src/country-by-capital-city.json')
+      .then(response => response.json())  
+      .then(data => {
+        const land = data.find(item => item.country === landId);
+        if (land) {
+          city = land.city;
+          fetchCoordinates(city);
+          document.querySelector('p').textContent = `📍 ${land.city}`;
+        } else {
+          document.querySelector('p').textContent = `No capital found for ${landId}`;
+        }
+      })
+      .catch(error => {
+        console.error("Er is een fout opgetreden bij het ophalen van de hoofdsteden:", error);
+        document.querySelector('p').textContent = "Error fetching capital city.";
+      });
+  }
 
   function schaalKaartOpnieuw() {
     const bounds = kaartPadGenerator.bounds({ type: 'Sphere' });
@@ -65,7 +137,7 @@
         .datum({ type: 'Sphere' })
         .attr('d', kaartPadGenerator)
         .attr('class', "Sphere")
-        .style("fill", "url(#sphere-gradient)")
+        .style("fill", "url(#sphere-gradient)");
 
       svgElement
         .selectAll("path.land")
@@ -91,7 +163,7 @@
         .on("click", (event, land) => {
           toonGeselecteerdLand(land); 
           console.log(landNamen[land.id]);
-          document.querySelector('h2').textContent = landNamen[land.id]
+          document.querySelector('h2').textContent = landNamen[land.id];
           haalHoofdstadOp(landNamen[land.id]);
         });
 
@@ -103,6 +175,13 @@
     });
   });
 </script>
+
+<style>
+  .sun-info {
+      font-size: 1.2em;
+      margin-top: 10px;
+  }
+</style>
 
 <section class="kaart">
   <h2></h2>
@@ -119,3 +198,13 @@
     <path class="Sphere" />
   </svg>
 </section>
+
+<div class="sun-info">
+  {#if sunrise && sunset}
+    <p>Tijdzone: {timezone}</p>
+    <p>Zonsopgang: {sunrise}</p>
+    <p>Zonsondergang: {sunset}</p>
+  {:else}
+    <p>Voer een stad in om zonsopgang en zonsondergang te zien.</p>
+  {/if}
+</div>
