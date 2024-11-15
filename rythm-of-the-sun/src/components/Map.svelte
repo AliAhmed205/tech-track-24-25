@@ -1,104 +1,41 @@
 <script>
+  import * as solar from "solar-calculator";
   import { select, json, geoPath, tsv, geoNaturalEarth1, geoCircle } from "d3";
+  import { fetchSunriseSunset } from "../lib/sunrise.js";
+  import { updateSelectedDate } from "../lib/datumTijd";
+  import { combineDateTime } from "../lib/combiTijd.js";
+  import { updateSelectedTime } from "../lib/datumTijd";
+  import { fetchTimeZone } from "../lib/tijdZone.js";
   import { onMount } from "svelte";
   import { feature } from "topojson-client";
   import { initKaart, toonGeselecteerdLand } from "../lib/toonLand";
-  import * as solar from "solar-calculator";
 
   let svgElement, wereldProjectie, kaartPadGenerator, landTooltip;
   let city = "";
   let timezone = "";
   let sunrise;
   let sunset;
+  let selectedDate = new Date();
+  let selectedTime = selectedDate.toTimeString().slice(0, 5);
 
-  let selectedDate = new Date(); 
-  let selectedTime = selectedDate.toTimeString().slice(0, 5); 
-  let userLocation = { latitude: 0, longitude: 0 };
-
-  const SUNRISE_SUNSET_API_URL = "https://api.sunrisesunset.io/json";
   const GEO_NAMES_USERNAME = "aliahmed205";
 
-  function getUserLocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        userLocation.latitude = position.coords.latitude;
-        userLocation.longitude = position.coords.longitude;
-        resetToCurrentTime(); // Reset de tijd bij het verkrijgen van locatie
-      });
-    }
+  function handleDateChange(event) {
+    updateSelectedDate(event, updateSunAndNight);
   }
 
-  function updateSelectedDate(event) {
-    selectedDate = new Date(event.target.value);
-  
-    updateSunAndNight();
+  function handleTimeChange(event) {
+    updateSelectedTime(event, updateSunAndNight);
   }
 
-  // Functie om geselecteerde tijd bij te werken
-  function updateSelectedTime(event) {
-    selectedTime = event.target.value;
-    updateSunAndNight();
-  }
-
-  // Functie om datum en tijd te combineren tot een volledig Date-object
-  function combineDateTime(date, time) {
-    const [hours, minutes] = time.split(":");
-    const newDate = new Date(date);
-    newDate.setHours(hours, minutes);
-    return newDate;
-  }
-  
-
-  // Functie om de tijd te resetten naar de huidige tijd en locatie
   function resetToCurrentTime() {
-  const now = new Date();
-  
-  selectedDate = now.toISOString().slice(0, 10); 
-  selectedTime = now.toTimeString().slice(0, 5); 
+    const now = new Date();
 
-  updateSunAndNight();
-}
+    selectedDate = now.toISOString().slice(0, 10);
+    selectedTime = now.toTimeString().slice(0, 5);
 
-  function parseTimeToUTC(timeString) {
-    const [time, modifier] = timeString.split(" ");
-    let [hours, minutes, seconds] = time.split(":").map(Number);
-    if (modifier === "PM" && hours < 12) hours += 12;
-    if (modifier === "AM" && hours === 12) hours = 0;
-    const date = new Date();
-    date.setUTCHours(hours, minutes, seconds || 0, 0);
-    return date;
+    updateSunAndNight();
   }
-
-  async function fetchTimeZone(latitude, longitude) {
-  try {
-    const response = await fetch(
-      `http://api.geonames.org/timezone?lat=${latitude}&lng=${longitude}&username=${GEO_NAMES_USERNAME}`
-    );
-    const text = await response.text();
-
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(text, "text/xml");
-
-    const timezoneNode = xmlDoc.querySelector("timezoneId");
-    const timeNode = xmlDoc.querySelector("time");
-
-    if (timezoneNode && timeNode) {
-      timezone = timezoneNode.textContent;
-      const localTime = new Date(timeNode.textContent).toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-      return { timezone, localTime };
-    } else {
-      console.error("Kon geen timezoneId of lokale tijd vinden in de XML.");
-      return null;
-    }
-  } catch (error) {
-    console.error("Fout bij ophalen van tijdzone en lokale tijd:", error);
-    return null;
-  }
-}
-
 
   async function fetchCoordinates(city) {
     const response = await fetch(
@@ -107,50 +44,15 @@
     const data = await response.json();
     if (data && data.length > 0) {
       const { lat, lon } = data[0];
-      fetchSunriseSunset(lat, lon);
+      const sunriseSunset = await fetchSunriseSunset(lat, lon);
+
+      if (sunriseSunset) {
+        sunrise = sunriseSunset.sunrise;
+        sunset = sunriseSunset.sunset;
+      }
+      console.log(sunriseSunset);
     } else {
       console.error("Kon geen locatie vinden voor de ingevoerde stad.");
-    }
-  }
-
-  async function fetchSunriseSunset(latitude, longitude) {
-    try {
-      const response = await fetch(
-        `${SUNRISE_SUNSET_API_URL}?lat=${latitude}&lng=${longitude}&timezone=UTC`
-      );
-      const data = await response.json();
-      if (data.status === "OK") {
-        await fetchTimeZone(latitude, longitude);
-        sunrise = parseTimeToUTC(data.results.sunrise);
-        sunset = parseTimeToUTC(data.results.sunset);
-
-        try {
-          const localSunrise = new Date(
-            sunrise.toLocaleString("en-US", { timeZone: timezone })
-          );
-          const localSunset = new Date(
-            sunset.toLocaleString("en-US", { timeZone: timezone })
-          );
-
-          sunrise = localSunrise.toLocaleTimeString();
-          sunset = localSunset.toLocaleTimeString();
-        } catch (error) {
-          console.error("Fout bij omzetten van tijd:", error);
-        }
-      } else {
-        console.error(
-          "Kon zonsopgang/zonsondergang gegevens niet ophalen:",
-          data
-        );
-      }
-    } catch (error) {
-      console.error("Er ging iets mis:", error);
-    }
-  }
-
-  function searchCity() {
-    if (city) {
-      fetchCoordinates(city);
     }
   }
 
@@ -221,7 +123,9 @@
   }
 
   function updateSunAndNight() {
-    const sunPosition = calculateSunPosition(combineDateTime(selectedDate, selectedTime));
+    const sunPosition = calculateSunPosition(
+      combineDateTime(selectedDate, selectedTime)
+    );
     const nightZone = createNightCircle(sunPosition);
 
     // Update the map with the new sun and night zone
@@ -280,7 +184,7 @@
 
             const landNaam = landNamen[land.id];
             const coords = land.geometry.coordinates[0][0]; // Neem een coördinaat van het land
-            const tijdzoneData = await fetchTimeZone(coords[1], coords[0]); // Lat en lon
+            const tijdzoneData = await fetchTimeZone(coords[1], coords[0], GEO_NAMES_USERNAME);
 
             if (tijdzoneData) {
               const { timezone, localTime } = tijdzoneData;
@@ -324,47 +228,47 @@
 </script>
 
 <section class="kaart">
-
   <div class="date-time-input">
     <label for="date">Selecteer een datum:</label>
     <input
       type="date"
       id="date"
       value={selectedDate.toISOString().slice(0, 10)}
-      on:change={updateSelectedDate}
+      on:change={handleDateChange}
     />
-  
+
     <label for="time">Selecteer een tijd:</label>
     <input
       type="time"
       id="time"
       bind:value={selectedTime}
-      on:change={updateSelectedTime}
+      on:change={handleTimeChange}
     />
-  
+
     <button on:click={resetToCurrentTime}>Reset naar huidige tijd</button>
-    
+
     <h2></h2>
-  <p></p>
-  <svg
-    style="max-width: 90%; height: auto; margin: auto; border-radius: 3rem; padding: 2rem;"
-  >
-    <defs>
-      <radialGradient
-        id="sphere-gradient"
-        cx="50%"
-        cy="50%"
-        r="50%"
-        fx="50%"
-        fy="50%"
-      >
-        <stop offset="0%" style="stop-color: #1f3c8f; stop-opacity: 1" />
-        <stop offset="90%" style="stop-color: #4e7ad8; stop-opacity: 1" />
-        <stop offset="100%" style="stop-color: #3ba7ff; stop-opacity: 1" />
-      </radialGradient>
-    </defs>
-    <path class="Sphere" />
-  </svg>
+    <p></p>
+    <svg
+      style="max-width: 90%; height: auto; margin: auto; border-radius: 3rem; padding: 2rem;"
+    >
+      <defs>
+        <radialGradient
+          id="sphere-gradient"
+          cx="50%"
+          cy="50%"
+          r="50%"
+          fx="50%"
+          fy="50%"
+        >
+          <stop offset="0%" style="stop-color: #1f3c8f; stop-opacity: 1" />
+          <stop offset="90%" style="stop-color: #4e7ad8; stop-opacity: 1" />
+          <stop offset="100%" style="stop-color: #3ba7ff; stop-opacity: 1" />
+        </radialGradient>
+      </defs>
+      <path class="Sphere" />
+    </svg>
+  </div>
 </section>
 
 <div class="sun-info">
