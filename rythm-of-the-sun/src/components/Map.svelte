@@ -144,11 +144,13 @@ function updateSunAndNight() {
   const nightZone = createNightCircle(sunPosition);
 
   // Update the map with the new sun and night zone
-  svgElement.selectAll(".night-zone").remove();  // Verwijder vorige nachtzone
+  svgElement.selectAll(".night-zone").remove();  
   svgElement.append("path")
     .datum(nightZone)
     .attr("class", "night-zone")
     .attr("d", kaartPadGenerator)
+    .attr("pointer-events", "none")
+    .style("stroke", "rgba(0, 0, 0, .8)")     
     .attr("fill", "rgba(0, 0, 0, .8)");
   }
 
@@ -233,8 +235,7 @@ function updateSunAndNight() {
         <stop offset="100%" style="stop-color: #3ba7ff; stop-opacity: 1" />
       </radialGradient>
     </defs>
-
-    <path class="Sphere" />
+      <path class="Sphere" />
   </svg>
 </section>
 
