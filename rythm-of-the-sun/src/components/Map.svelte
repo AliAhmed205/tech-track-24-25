@@ -1,8 +1,10 @@
 <script>
-  import { select, json, geoPath, tsv, geoNaturalEarth1 } from "d3";
+  import { select, json, geoPath, tsv, geoNaturalEarth1, geoCircle } from "d3";
   import { onMount } from "svelte";
   import { feature } from "topojson-client";
   import { initKaart, toonGeselecteerdLand } from '../lib/toonLand';
+  import * as solar from "solar-calculator";
+
 
   let svgElement, wereldProjectie, kaartPadGenerator, landTooltip;
   let city = "";
@@ -10,8 +12,12 @@
   let sunrise;
   let sunset;
 
+  let selectedDate = new Date(); 
+  let selectedTime = selectedDate.toTimeString().slice(0, 5);
+
   const SUNRISE_SUNSET_API_URL = 'https://api.sunrisesunset.io/json';
   const GEO_NAMES_USERNAME = 'aliahmed205';
+
 
   function parseTimeToUTC(timeString) {
       const [time, modifier] = timeString.split(' ');
@@ -111,8 +117,44 @@
       .attr("height", height);
   }
 
+  function antipode(coordinates) {
+    const [longitude, latitude] = coordinates;
+    const antipodeLongitude = longitude + 180;
+    const antipodeLatitude = -latitude;
+    return [antipodeLongitude, antipodeLatitude];
+  }
+
+  // Functies voor zonpositie en nachtzone
+function calculateSunPosition(date) {
+  const now = new Date(date);
+  const day = new Date(+now).setUTCHours(0, 0, 0, 0);
+  const t = solar.century(now);
+  const longitude = ((day - now) / 864e5) * 360 - 180;
+  return [longitude - solar.equationOfTime(t) / 4, solar.declination(t)];
+}
+
+function createNightCircle(sun) {
+  const radius = 90; // in graden
+  const center = antipode(sun);
+  return geoCircle().radius(radius).center(center)();
+}
+
+function updateSunAndNight() {
+  const sunPosition = calculateSunPosition(new Date());
+  const nightZone = createNightCircle(sunPosition);
+
+  // Update the map with the new sun and night zone
+  svgElement.selectAll(".night-zone").remove();  // Verwijder vorige nachtzone
+  svgElement.append("path")
+    .datum(nightZone)
+    .attr("class", "night-zone")
+    .attr("d", kaartPadGenerator)
+    .attr("fill", "rgba(0, 0, 0, .8)");
+  }
+
+
   onMount(() => {
-    svgElement = select("svg");
+    svgElement = select(".kaart svg");
     wereldProjectie = geoNaturalEarth1();
     kaartPadGenerator = geoPath().projection(wereldProjectie);
 
@@ -169,19 +211,16 @@
 
       schaalKaartOpnieuw();
       window.addEventListener("resize", schaalKaartOpnieuw);
+
+      updateSunAndNight();
+      setInterval(() => updateSunAndNight(), 60000);
     })
+
     .catch((fout) => {
       console.error("Fout bij het laden of verwerken van data:", fout);
     });
   });
 </script>
-
-<style>
-  .sun-info {
-      font-size: 1.2em;
-      margin-top: 10px;
-  }
-</style>
 
 <section class="kaart">
   <h2></h2>
