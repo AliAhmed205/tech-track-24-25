@@ -11,11 +11,53 @@
   let sunrise;
   let sunset;
 
-  let selectedDate = new Date();
-  let selectedTime = selectedDate.toTimeString().slice(0, 5);
+  let selectedDate = new Date(); 
+  let selectedTime = selectedDate.toTimeString().slice(0, 5); 
+  let userLocation = { latitude: 0, longitude: 0 };
 
   const SUNRISE_SUNSET_API_URL = "https://api.sunrisesunset.io/json";
   const GEO_NAMES_USERNAME = "aliahmed205";
+
+  function getUserLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        userLocation.latitude = position.coords.latitude;
+        userLocation.longitude = position.coords.longitude;
+        resetToCurrentTime(); // Reset de tijd bij het verkrijgen van locatie
+      });
+    }
+  }
+
+  function updateSelectedDate(event) {
+    selectedDate = new Date(event.target.value);
+  
+    updateSunAndNight();
+  }
+
+  // Functie om geselecteerde tijd bij te werken
+  function updateSelectedTime(event) {
+    selectedTime = event.target.value;
+    updateSunAndNight();
+  }
+
+  // Functie om datum en tijd te combineren tot een volledig Date-object
+  function combineDateTime(date, time) {
+    const [hours, minutes] = time.split(":");
+    const newDate = new Date(date);
+    newDate.setHours(hours, minutes);
+    return newDate;
+  }
+  
+
+  // Functie om de tijd te resetten naar de huidige tijd en locatie
+  function resetToCurrentTime() {
+  const now = new Date();
+  
+  selectedDate = now.toISOString().slice(0, 10); 
+  selectedTime = now.toTimeString().slice(0, 5); 
+
+  updateSunAndNight();
+}
 
   function parseTimeToUTC(timeString) {
     const [time, modifier] = timeString.split(" ");
@@ -179,7 +221,7 @@
   }
 
   function updateSunAndNight() {
-    const sunPosition = calculateSunPosition(new Date());
+    const sunPosition = calculateSunPosition(combineDateTime(selectedDate, selectedTime));
     const nightZone = createNightCircle(sunPosition);
 
     // Update the map with the new sun and night zone
@@ -189,7 +231,7 @@
       .datum(nightZone)
       .attr("class", "night-zone")
       .attr("d", kaartPadGenerator)
-      .attr("pointer-events", "none")
+      // .attr("pointer-events", "none")
       .style("stroke", "rgba(0, 0, 48, 0.9)")
       .attr("fill", "rgba(0, 0, 48, 0.9)");
   }
@@ -282,7 +324,27 @@
 </script>
 
 <section class="kaart">
-  <h2></h2>
+
+  <div class="date-time-input">
+    <label for="date">Selecteer een datum:</label>
+    <input
+      type="date"
+      id="date"
+      value={selectedDate.toISOString().slice(0, 10)}
+      on:change={updateSelectedDate}
+    />
+  
+    <label for="time">Selecteer een tijd:</label>
+    <input
+      type="time"
+      id="time"
+      bind:value={selectedTime}
+      on:change={updateSelectedTime}
+    />
+  
+    <button on:click={resetToCurrentTime}>Reset naar huidige tijd</button>
+    
+    <h2></h2>
   <p></p>
   <svg
     style="max-width: 90%; height: auto; margin: auto; border-radius: 3rem; padding: 2rem;"
@@ -311,6 +373,6 @@
     <p>Zonsopgang: {sunrise}</p>
     <p>Zonsondergang: {sunset}</p>
   {:else}
-    <p>Voer een stad in om zonsopgang en zonsondergang te zien.</p>
+    <p>Klik op een land om zonsopgang en zonsondergang te zien.</p>
   {/if}
 </div>
