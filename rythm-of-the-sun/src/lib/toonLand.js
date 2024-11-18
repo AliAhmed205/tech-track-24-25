@@ -25,7 +25,7 @@ export function toonGeselecteerdLand(d) {
     const landBreedte = x1 - x0;
     const landHoogte = y1 - y0;
 
-    const scaleFactor = 1.5; // Bepaal de schaalfactor voor vergroting
+    const scaleFactor = 1.5; 
     const viewBoxX = x0 - (landBreedte * (scaleFactor - 1)) / 2;
     const viewBoxY = y0 - (landHoogte * (scaleFactor - 1)) / 2;
 
