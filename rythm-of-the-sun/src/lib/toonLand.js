@@ -17,6 +17,7 @@ export function toonGeselecteerdLand(d) {
     svgElement.transition().duration(500).attr("viewBox", `${0} ${0} ${svgElement.attr("width")} ${svgElement.attr("height")}`);
     geselecteerdeLand = null;
     console.log(d.properties);
+    console.log(sunset)
     
   } else {
     svgElement.selectAll("path.land").style("opacity", (land) => (land === d ? 1 : 0)).style("display", (land) => d ? "block" : 'none');

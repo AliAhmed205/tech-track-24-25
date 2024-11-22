@@ -18,16 +18,6 @@
   const SUNRISE_SUNSET_API_URL = "https://api.sunrisesunset.io/json";
   const GEO_NAMES_USERNAME = "aliahmed205";
 
-  function getUserLocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        userLocation.latitude = position.coords.latitude;
-        userLocation.longitude = position.coords.longitude;
-        resetToCurrentTime(); // Reset de tijd bij het verkrijgen van locatie
-      });
-    }
-  }
-
   function updateSelectedDate(event) {
     selectedDate = new Date(event.target.value);
   
@@ -148,11 +138,6 @@
     }
   }
 
-  function searchCity() {
-    if (city) {
-      fetchCoordinates(city);
-    }
-  }
 
   function haalHoofdstadOp(landId) {
     fetch(
@@ -299,8 +284,9 @@
             landTooltip.style("visibility", "hidden");
           })
           .on("click", (event, land) => {
-            toonGeselecteerdLand(land);
             sunrise = null
+            toonGeselecteerdLand(land);
+            console.log(sunrise)
             console.log(landNamen[land.id]);
             document.querySelector("h2").textContent = landNamen[land.id];
             haalHoofdstadOp(landNamen[land.id]);
