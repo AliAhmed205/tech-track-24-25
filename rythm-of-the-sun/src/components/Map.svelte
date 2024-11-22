@@ -18,6 +18,16 @@
   const SUNRISE_SUNSET_API_URL = "https://api.sunrisesunset.io/json";
   const GEO_NAMES_USERNAME = "aliahmed205";
 
+  function getUserLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        userLocation.latitude = position.coords.latitude;
+        userLocation.longitude = position.coords.longitude;
+        resetToCurrentTime(); 
+      });
+    }
+  }
+
   function updateSelectedDate(event) {
     selectedDate = new Date(event.target.value);
   
