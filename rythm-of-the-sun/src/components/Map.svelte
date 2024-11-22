@@ -5,7 +5,7 @@
   import { initKaart, toonGeselecteerdLand } from "../lib/toonLand";
   import * as solar from "solar-calculator";
 
-  let svgElement, wereldProjectie, kaartPadGenerator, landTooltip;
+  let svgElement, wereldProjectie, kaartPadGenerator;
   let city = "";
   let timezone = "";
   let sunrise;
@@ -238,8 +238,6 @@
 
     initKaart(svgElement, kaartPadGenerator);
 
-    landTooltip = select("body").append("div").attr("class", "tooltip");
-
     Promise.all([
       tsv("https://unpkg.com/world-atlas@1.1.4/world/110m.tsv"),
       json("https://unpkg.com/world-atlas@1.1.4/world/110m.json"),
@@ -270,29 +268,6 @@
           .attr("d", kaartPadGenerator)
           .attr("fill", "lightgreen")
           .attr("stroke", "black")
-          .on("mouseover", async (event, land) => {
-            landTooltip.style("visibility", "visible").text("Laden...");
-
-            const landNaam = landNamen[land.id];
-            const coords = land.geometry.coordinates[0][0]; 
-            const tijdzoneData = await fetchTimeZone(coords[1], coords[0]); 
-
-            if (tijdzoneData) {
-              const { timezone, localTime } = tijdzoneData;
-              landTooltip
-                .text(`${landNaam}\nLokale tijd: ${localTime} (${timezone})`)
-                .style("top", event.pageY + 10 + "px")
-                .style("left", event.pageX + 10 + "px");
-            }  
-          })
-          .on("mousemove", (event) => {
-            landTooltip
-              .style("top", event.pageY + 10 + "px")
-              .style("left", event.pageX + 10 + "px");
-          })
-          .on("mouseout", () => {
-            landTooltip.style("visibility", "hidden");
-          })
           .on("click", (event, land) => {
             sunrise = null
             toonGeselecteerdLand(land);
