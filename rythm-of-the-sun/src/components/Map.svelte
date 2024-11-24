@@ -10,13 +10,14 @@
   let timezone = "";
   let sunrise;
   let sunset;
+  let localTime = "";
+
 
   let selectedDate = new Date(); 
   let selectedTime = selectedDate.toTimeString().slice(0, 5); 
   let userLocation = { latitude: 0, longitude: 0 };
 
   const SUNRISE_SUNSET_API_URL = "https://api.sunrisesunset.io/json";
-  const GEO_NAMES_USERNAME = "aliahmed205";
 
   function getUserLocation() {
     if (navigator.geolocation) {
@@ -70,34 +71,30 @@
   }
 
   async function fetchTimeZone(latitude, longitude) {
+  const apiKey = process.env.TIMEZONE_API_KEY;
   try {
     const response = await fetch(
-      `http://api.geonames.org/timezone?lat=${latitude}&lng=${longitude}&username=${GEO_NAMES_USERNAME}`
+      `http://api.timezonedb.com/v2.1/get-time-zone?key=${apiKey}&format=json&by=position&lat=${latitude}&lng=${longitude}`
     );
-    const text = await response.text();
+    const data = await response.json();
 
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(text, "text/xml");
-
-    const timezoneNode = xmlDoc.querySelector("timezoneId");
-    const timeNode = xmlDoc.querySelector("time");
-
-    if (timezoneNode && timeNode) {
-      timezone = timezoneNode.textContent;
-      const localTime = new Date(timeNode.textContent).toLocaleTimeString("en-US", {
+    if (data.status === "OK") {
+      timezone = data.zoneName;
+      localTime = new Date(data.formatted).toLocaleTimeString("en-US", {
         hour: "2-digit",
         minute: "2-digit",
       });
       return { timezone, localTime };
     } else {
-      console.error("Kon geen timezoneId of lokale tijd vinden in de XML.");
+      console.error("Kon tijdzonegegevens niet ophalen:", data.message);
       return null;
     }
   } catch (error) {
-    console.error("Fout bij ophalen van tijdzone en lokale tijd:", error);
+    console.error("Fout bij ophalen van tijdzone:", error);
     return null;
   }
 }
+
 
 
   async function fetchCoordinates(city) {
@@ -114,39 +111,41 @@
   }
 
   async function fetchSunriseSunset(latitude, longitude) {
-    try {
-      const response = await fetch(
-        `${SUNRISE_SUNSET_API_URL}?lat=${latitude}&lng=${longitude}&timezone=UTC`
-      );
-      const data = await response.json();
-      if (data.status === "OK") {
-        await fetchTimeZone(latitude, longitude);
-        sunrise = parseTimeToUTC(data.results.sunrise);
-        sunset = parseTimeToUTC(data.results.sunset);
+  try {
+    const response = await fetch(
+      `${SUNRISE_SUNSET_API_URL}?lat=${latitude}&lng=${longitude}&timezone=UTC`
+    );
+    const data = await response.json();
 
-        try {
-          const localSunrise = new Date(
-            sunrise.toLocaleString("en-US", { timeZone: timezone })
-          );
-          const localSunset = new Date(
-            sunset.toLocaleString("en-US", { timeZone: timezone })
-          );
+    if (data.status === "OK") {
+      await fetchTimeZone(latitude, longitude); // Update timezone en localTime
+      sunrise = parseTimeToUTC(data.results.sunrise);
+      sunset = parseTimeToUTC(data.results.sunset);
 
-          sunrise = localSunrise.toLocaleTimeString();
-          sunset = localSunset.toLocaleTimeString();
-        } catch (error) {
-          console.error("Fout bij omzetten van tijd:", error);
-        }
-      } else {
-        console.error(
-          "Kon zonsopgang/zonsondergang gegevens niet ophalen:",
-          data
+      try {
+        const localSunrise = new Date(
+          sunrise.toLocaleString("en-US", { timeZone: timezone })
         );
+        const localSunset = new Date(
+          sunset.toLocaleString("en-US", { timeZone: timezone })
+        );
+
+        sunrise = localSunrise.toLocaleTimeString();
+        sunset = localSunset.toLocaleTimeString();
+      } catch (error) {
+        console.error("Fout bij omzetten van tijd:", error);
       }
-    } catch (error) {
-      console.error("Er ging iets mis:", error);
+    } else {
+      console.error(
+        "Kon zonsopgang/zonsondergang gegevens niet ophalen:",
+        data
+      );
     }
+  } catch (error) {
+    console.error("Er ging iets mis:", error);
   }
+}
+
 
 
   function haalHoofdstadOp(landId) {
@@ -338,7 +337,8 @@
   {#if sunrise && sunset}
     <p>Zonsopgang: {sunrise}</p>
     <p>Zonsondergang: {sunset}</p>
+    <p>Lokale Tijd: {localTime}</p>
   {:else}
-    <p>Klik op een land om zonsopgang en zonsondergang te zien.</p>
+    <p>Klik op een land om zonsopgang, zonsondergang en lokale tijd te zien.</p>
   {/if}
 </div>

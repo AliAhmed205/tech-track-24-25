@@ -39,6 +39,11 @@ body {
       text-shadow: 0 0 5px var(--shadow-color), 0 0 10px var(--shadow-color);
       margin: 0;
     }
+  
+    & .intro-container {
+      
+    }
+
   }
 }
 
