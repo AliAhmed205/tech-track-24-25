@@ -1,12 +1,10 @@
 <script>
   import { select, json, geoPath, tsv, geoNaturalEarth1, geoCircle } from "d3";
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { feature } from "topojson-client";
   import { initMap, showSelectedCountry } from "../lib/toonLand";
   import * as solar from "solar-calculator";
-  // import {fetchTimeZone, fetchSunriseSunset, fetchCoordinates } from "../lib/sunInfo"
-
-  
+  import { startTimeUpdater, stopTimeUpdater } from "../lib/updateTijd";
 
   let svgElement, WorldProjection, cardPathGenerator;
   let timezone = "";
@@ -18,19 +16,28 @@
   let selectedDate = new Date();
   let selectedTime = selectedDate.toTimeString().slice(0, 5);
 
+  function updateToCurrentTime(now) {
+    selectedDate = now.toISOString().slice(0, 10);
+    selectedTime = now.toTimeString().slice(0, 5);
+    updateSunAndNight();
+  }
+
   const SUNRISE_SUNSET_API_URL = "https://api.sunrisesunset.io/json";
 
   function updateSelectedDate(event) {
-    selectedDate = new Date(event.target.value);
-
-    updateSunAndNight();
-  }
+  const newDate = new Date(event.target.value);
+  selectedDate = newDate.toISOString().slice(0, 10);
+  stopTimeUpdater();
+  updateSunAndNight();
+}
 
   function updateSelectedTime(event) {
     selectedTime = event.target.value;
-    updateSunAndNight();
-  }
+    
+    stopTimeUpdater();
 
+    updateSunAndNight();
+}
   function combineDateTime(date, time) {
     const [hours, minutes] = time.split(":");
     const newDate = new Date(date);
@@ -38,14 +45,18 @@
     return newDate;
   }
 
+
   function resetToCurrentTime() {
-    const now = new Date();
+  const now = new Date(); 
+  selectedDate = now.toISOString().slice(0, 10); 
+  selectedTime = now.toTimeString().slice(0, 5); 
 
-    selectedDate = now.toISOString().slice(0, 10);
-    selectedTime = now.toTimeString().slice(0, 5);
+  updateSunAndNight();
+  stopTimeUpdater();
+  startTimeUpdater(updateToCurrentTime);
+}
 
-    updateSunAndNight();
-  }
+
 
   function parseTimeToUTC(timeString) {
     const [time, modifier] = timeString.split(" ");
@@ -56,6 +67,7 @@
     date.setUTCHours(hours, minutes, seconds || 0, 0);
     return date;
   }
+
 
   async function fetchTimeZone(latitude, longitude) {
     const apiKey = process.env.TIMEZONE_API_KEY;
@@ -97,73 +109,71 @@
 
   async function fetchSunriseSunset(latitude, longitude) {
     try {
-        const response = await fetch(
-            `${SUNRISE_SUNSET_API_URL}?lat=${latitude}&lng=${longitude}&timezone=UTC`
-        );
-        const data = await response.json();
+      const response = await fetch(
+        `${SUNRISE_SUNSET_API_URL}?lat=${latitude}&lng=${longitude}&timezone=UTC`
+      );
+      const data = await response.json();
 
-        if (data.status === "OK") {
-            await fetchTimeZone(latitude, longitude); 
-            const sunriseUTC = parseTimeToUTC(data.results.sunrise);
-            const sunsetUTC = parseTimeToUTC(data.results.sunset);
+      if (data.status === "OK") {
+        await fetchTimeZone(latitude, longitude);
+        const sunriseUTC = parseTimeToUTC(data.results.sunrise);
+        const sunsetUTC = parseTimeToUTC(data.results.sunset);
 
-            try {
-                const localSunrise = new Date(
-                    sunriseUTC.toLocaleString("en-US", { timeZone: timezone })
-                );
-                const localSunset = new Date(
-                    sunsetUTC.toLocaleString("en-US", { timeZone: timezone })
-                );
+        try {
+          const localSunrise = new Date(
+            sunriseUTC.toLocaleString("en-US", { timeZone: timezone })
+          );
+          const localSunset = new Date(
+            sunsetUTC.toLocaleString("en-US", { timeZone: timezone })
+          );
 
-                sunrise = localSunrise.toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: true,
-                });
+          sunrise = localSunrise.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          });
 
-                sunset = localSunset.toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: true,
-                });
-            } catch (error) {
-                console.error("Fout bij omzetten van tijd:", error);
-            }
-        } else {
-            console.error(
-                "Kon zonsopgang/zonsondergang gegevens niet ophalen:",
-                data
-            );
+          sunset = localSunset.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          });
+        } catch (error) {
+          console.error("Fout bij omzetten van tijd:", error);
         }
+      } else {
+        console.error(
+          "Kon zonsopgang/zonsondergang gegevens niet ophalen:",
+          data
+        );
+      }
     } catch (error) {
-        console.error("Er ging iets mis:", error);
+      console.error("Er ging iets mis:", error);
     }
-}
-
+  }
 
   function haalHoofdstadOp(landId) {
-  fetch(
-    "https://raw.githubusercontent.com/samayo/country-json/refs/heads/master/src/country-by-capital-city.json"
-  )
-    .then((response) => response.json())
-    .then((data) => {
-      const land = data.find((item) => item.country === landId);
-      if (land) {
-        selectedCity = land.city;  
-        fetchCoordinates(land.city);
-      } else {
-        selectedCity = `No capital found for ${landId}`; 
-      }
-    })
-    .catch((error) => {
-      console.error(
-        "Er is een fout opgetreden bij het ophalen van de hoofdsteden:",
-        error
-      );
-      selectedCity = "Error fetching capital city.";  // 
-    });
-}
-
+    fetch(
+      "https://raw.githubusercontent.com/samayo/country-json/refs/heads/master/src/country-by-capital-city.json"
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        const land = data.find((item) => item.country === landId);
+        if (land) {
+          selectedCity = land.city;
+          fetchCoordinates(land.city);
+        } else {
+          selectedCity = `No capital found for ${landId}`;
+        }
+      })
+      .catch((error) => {
+        console.error(
+          "Er is een fout opgetreden bij het ophalen van de hoofdsteden:",
+          error
+        );
+        selectedCity = "Error fetching capital city."; //
+      });
+  }
 
   function schaalKaartOpnieuw() {
     const bounds = cardPathGenerator.bounds({ type: "Sphere" });
@@ -223,7 +233,8 @@
   }
 
   onMount(() => {
-    const calendarInput = document.querySelector("#date");
+    startTimeUpdater(updateToCurrentTime);
+
     svgElement = select(".kaart svg");
     WorldProjection = geoNaturalEarth1();
     cardPathGenerator = geoPath().projection(WorldProjection);
@@ -263,8 +274,8 @@
           .on("click", (event, land) => {
             sunrise = null;
             showSelectedCountry(land);
-            selectedCountry = landNamen[land.id]; 
-            haalHoofdstadOp(landNamen[land.id]); 
+            selectedCountry = landNamen[land.id];
+            haalHoofdstadOp(landNamen[land.id]);
           });
 
         schaalKaartOpnieuw();
@@ -277,20 +288,24 @@
       .catch((fout) => {
         console.error("Fout bij het laden of verwerken van data:", fout);
       });
+
+    onDestroy(() => {
+      stopTimeUpdater();
+    });
   });
 </script>
 
 <section class="kaart">
   <div class="date-time-input">
-    <label for="date">Selecteer een datum:</label>
+    <label for="date">Select a date:</label>
     <input
-      type="date"
-      id="date"
-      value={selectedDate.toISOString().slice(0, 10)}
-      on:change={updateSelectedDate}
+    type="date"
+    id="date"
+    value={selectedDate} 
+    on:change={updateSelectedDate}
     />
 
-    <label for="time">Selecteer een tijd:</label>
+    <label for="time">Select a time:</label>
     <input
       type="time"
       id="time"
@@ -298,8 +313,7 @@
       on:change={updateSelectedTime}
     />
 
-    <button on:click={resetToCurrentTime}>Reset naar huidige tijd</button>
-
+    <button on:click={resetToCurrentTime}>Reset to today</button>
 
     <svg
       style="max-width: 90%; height: auto; margin: auto; border-radius: 3rem; padding: 2rem;"
@@ -325,13 +339,28 @@
 
 <div class="sun-info">
   {#if sunrise && sunset}
-    <p><strong>Geselecteerd land:</strong> {selectedCountry}</p>
-    <p><strong>Hoofdstad:</strong> {selectedCity}</p>
-    <p><strong>Zonsopgang:</strong> {sunrise}</p>
-    <p><strong>Zonsondergang:</strong> {sunset}</p>
-    <p><strong>Lokale tijd:</strong> {localTime}</p>
+    <p><strong></strong> {selectedCountry}</p>
+    <p><strong>📍</strong> {selectedCity}</p>
+    <p><img src="/images/sunrise.svg" alt="Sunrise" /> {sunrise}</p>
+    <p><img src="/images/sunset.svg" alt="Sunset" /> {sunset}</p>
+
+    <div class="sun-info">
+      {#if sunrise && sunset}
+        <p><strong></strong> {selectedCountry}</p>
+        <p><strong>📍</strong> {selectedCity}</p>
+        <p><img src="/images/sunrise.svg" alt="Sunrise" /> {sunrise}</p>
+        <p><img src="/images/sunset.svg" alt="Sunset" /> {sunset}</p>
+        <p><img src="/images/clock.svg" alt="" /> {localTime}</p>
+      {:else}
+        <p>
+          Click on a country to see its sunrise, sunset, capital and local time.
+        </p>
+      {/if}
+    </div>
+    <p>{localTime}</p>
   {:else}
-    <p>Klik op een land om zonsopgang, zonsondergang, hoofdstad en lokale tijd te zien.</p>
+    <p>
+      Click on a country to see its sunrise, sunset, capital and local time.
+    </p>
   {/if}
 </div>
-

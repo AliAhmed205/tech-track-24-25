@@ -3,6 +3,7 @@ import { select } from "d3";
 let selectedCountry = null;
 let svgElement, cardPathGenerator;
 
+
 export function initMap(svg, pathGenerator) {
   svgElement = svg;
   cardPathGenerator = pathGenerator;
