@@ -4,6 +4,9 @@
   import { feature } from "topojson-client";
   import { initMap, showSelectedCountry } from "../lib/toonLand";
   import * as solar from "solar-calculator";
+  // import {fetchTimeZone, fetchSunriseSunset, fetchCoordinates } from "../lib/sunInfo"
+
+  
 
   let svgElement, WorldProjection, cardPathGenerator;
   let timezone = "";
@@ -23,13 +26,11 @@
     updateSunAndNight();
   }
 
-  // Functie om geselecteerde tijd bij te werken
   function updateSelectedTime(event) {
     selectedTime = event.target.value;
     updateSunAndNight();
   }
 
-  // Functie om datum en tijd te combineren tot een volledig Date-object
   function combineDateTime(date, time) {
     const [hours, minutes] = time.split(":");
     const newDate = new Date(date);
@@ -37,7 +38,6 @@
     return newDate;
   }
 
-  // Functie om de tijd te resetten naar de huidige tijd en locatie
   function resetToCurrentTime() {
     const now = new Date();
 
@@ -97,39 +97,49 @@
 
   async function fetchSunriseSunset(latitude, longitude) {
     try {
-      const response = await fetch(
-        `${SUNRISE_SUNSET_API_URL}?lat=${latitude}&lng=${longitude}&timezone=UTC`
-      );
-      const data = await response.json();
-
-      if (data.status === "OK") {
-        await fetchTimeZone(latitude, longitude); // Update timezone en localTime
-        sunrise = parseTimeToUTC(data.results.sunrise);
-        sunset = parseTimeToUTC(data.results.sunset);
-
-        try {
-          const localSunrise = new Date(
-            sunrise.toLocaleString("en-US", { timeZone: timezone })
-          );
-          const localSunset = new Date(
-            sunset.toLocaleString("en-US", { timeZone: timezone })
-          );
-
-          sunrise = localSunrise.toLocaleTimeString();
-          sunset = localSunset.toLocaleTimeString();
-        } catch (error) {
-          console.error("Fout bij omzetten van tijd:", error);
-        }
-      } else {
-        console.error(
-          "Kon zonsopgang/zonsondergang gegevens niet ophalen:",
-          data
+        const response = await fetch(
+            `${SUNRISE_SUNSET_API_URL}?lat=${latitude}&lng=${longitude}&timezone=UTC`
         );
-      }
+        const data = await response.json();
+
+        if (data.status === "OK") {
+            await fetchTimeZone(latitude, longitude); 
+            const sunriseUTC = parseTimeToUTC(data.results.sunrise);
+            const sunsetUTC = parseTimeToUTC(data.results.sunset);
+
+            try {
+                const localSunrise = new Date(
+                    sunriseUTC.toLocaleString("en-US", { timeZone: timezone })
+                );
+                const localSunset = new Date(
+                    sunsetUTC.toLocaleString("en-US", { timeZone: timezone })
+                );
+
+                sunrise = localSunrise.toLocaleTimeString("en-US", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                });
+
+                sunset = localSunset.toLocaleTimeString("en-US", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                });
+            } catch (error) {
+                console.error("Fout bij omzetten van tijd:", error);
+            }
+        } else {
+            console.error(
+                "Kon zonsopgang/zonsondergang gegevens niet ophalen:",
+                data
+            );
+        }
     } catch (error) {
-      console.error("Er ging iets mis:", error);
+        console.error("Er ging iets mis:", error);
     }
-  }
+}
+
 
   function haalHoofdstadOp(landId) {
   fetch(
@@ -253,8 +263,8 @@
           .on("click", (event, land) => {
             sunrise = null;
             showSelectedCountry(land);
-            selectedCountry = landNamen[land.id]; // Sla het geselecteerde land op
-            haalHoofdstadOp(landNamen[land.id]); // Haal de hoofdstad op
+            selectedCountry = landNamen[land.id]; 
+            haalHoofdstadOp(landNamen[land.id]); 
           });
 
         schaalKaartOpnieuw();
