@@ -395,7 +395,6 @@
           .attr("fill", "lightgreen") // Stel de kleur van elk land in
           .attr("stroke", "black") // Stel de randkleur van elk land in
           .on("click", (event, country) => {
-            // Voeg een klikgebeurtenis toe voor landen
             sunrise = null; // Reset de zonsopgang bij een nieuwe klik
             showSelectedCountry(country); // Toon de geselecteerde landinformatie
             selectedCountry = countryNames[country.id]; // Bewaar de naam van het geselecteerde land
@@ -430,9 +429,7 @@
 />
 
 <section class="kaart">
-  <svg
-    style="max-width: 90%; height: auto; margin: auto; border-radius: 3rem; padding: 2rem;"
-  >
+  <svg>
     <defs>
       <radialGradient
         id="sphere-gradient"

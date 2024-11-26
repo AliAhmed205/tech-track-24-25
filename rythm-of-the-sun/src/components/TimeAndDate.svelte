@@ -7,6 +7,8 @@
 </script>
 
 <div class="date-time-input">
+  <h1 class="title"><i class="fa-solid fa-sun"></i> Rythm of The Sun</h1>
+  <div class="input-container">
   <label for="date">Select a date:</label>
   <input
     type="date"
@@ -23,5 +25,6 @@
     on:change={onTimeChange}
   />
 
-  <button on:click={onResetTime}>Reset to today</button>
+  <button on:click={onResetTime}><i class="fa-solid fa-rotate-right"></i>Reset to today</button>
+</div>
 </div>

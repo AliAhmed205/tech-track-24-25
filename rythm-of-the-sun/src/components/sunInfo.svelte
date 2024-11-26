@@ -8,11 +8,11 @@
 
 <div class="sun-info">
   {#if sunrise && sunset}
-    <p>{localTime}</p>
-    <p><strong></strong> {selectedCountry}</p>
-    <p><strong>📍</strong> {selectedCity}</p>
-    <p><img src="/images/sunrise.svg" alt="Sunrise" /> {sunrise}</p>
-    <p><img src="/images/sunset.svg" alt="Sunset" /> {sunset}</p>
+  <h2><strong></strong>  📍 {selectedCountry}</h2>
+  <h3><strong></strong> {selectedCity}</h3>
+  <h4>Local Time: {localTime}</h4>
+    <p><img src="/images/sunrise.svg" alt="Sunrise" /> <strong>Sunrise</strong>  {sunrise}</p>
+    <p><img src="/images/sunset.svg" alt="Sunset" /> <strong>Sunset</strong>  {sunset}</p>
   {:else}
     <p>
       Click on a country to see its sunrise, sunset, capital and local time.

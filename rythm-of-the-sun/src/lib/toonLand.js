@@ -12,9 +12,6 @@ export function initMap(svg, pathGenerator) {
 export function showSelectedCountry(d) {
   if (selectedCountry === d) {
 
-    // sunrise = null;
-    // sunset = null;
-
     svgElement.selectAll("path.country")
               .style("opacity", 1);
 
