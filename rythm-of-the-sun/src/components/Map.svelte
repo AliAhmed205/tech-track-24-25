@@ -5,6 +5,9 @@
   import { initMap, showSelectedCountry } from "../lib/toonLand";
   import * as solar from "solar-calculator";
   import { startTimeUpdater, stopTimeUpdater } from "../lib/updateTijd";
+  import SunInfo from "./sunInfo.svelte";
+  import TimeButtons from "./TimeButtons.svelte";
+  import TimeAndDate from "./TimeAndDate.svelte";
 
   let svgElement, WorldProjection, cardPathGenerator;
   let timezone = "";
@@ -149,17 +152,29 @@
   }
 
   function advanceTimeByHours(hours) {
-    const currentDateTime = combineDateTime(selectedDate, selectedTime);
-    const updatedDateTime = new Date(
-      currentDateTime.getTime() + hours * 60 * 60 * 1000
-    );
+  const step = hours > 0 ? 1 : -1; // Bepaalt of de tijd vooruit of achteruit gaat
+  const steps = Math.abs(hours); // Hoeveel stappen er nodig zijn
+  
+  let currentDateTime = combineDateTime(selectedDate, selectedTime);
 
-    selectedDate = updatedDateTime.toISOString().slice(0, 10);
-    selectedTime = updatedDateTime.toTimeString().slice(0, 5);
+  function updateTimeStep(stepCount) {
+    if (stepCount > steps) return; // Stop als alle stappen zijn uitgevoerd
 
-    stopTimeUpdater(); 
-    updateSunAndNight(); 
+    // Pas de huidige tijd aan
+    currentDateTime = new Date(currentDateTime.getTime() + step * 60 * 60 * 1000);
+    selectedDate = currentDateTime.toISOString().slice(0, 10);
+    selectedTime = currentDateTime.toTimeString().slice(0, 5);
+
+    updateSunAndNight(); // Update de zon- en nachtzone
+
+    // Roep deze functie opnieuw aan na een korte vertraging
+    setTimeout(() => updateTimeStep(stepCount + 1), 100); // 500 ms vertraging tussen stappen
   }
+
+  stopTimeUpdater(); // Zorg ervoor dat automatische updates worden gepauzeerd
+  updateTimeStep(1); // Start de update-loop
+}
+
 
   function haalHoofdstadOp(landId) {
     fetch(
@@ -310,76 +325,44 @@
   });
 </script>
 
+<TimeAndDate
+{selectedDate}
+{selectedTime}
+onDateChange={updateSelectedDate}
+onTimeChange={updateSelectedTime}
+onResetTime={resetToCurrentTime}
+/>
+
 <section class="kaart">
-  <div class="date-time-input">
-    <label for="date">Select a date:</label>
-    <input
-      type="date"
-      id="date"
-      value={selectedDate}
-      on:change={updateSelectedDate}
-    />
-
-    <label for="time">Select a time:</label>
-    <input
-      type="time"
-      id="time"
-      bind:value={selectedTime}
-      on:change={updateSelectedTime}
-    />
-
-    <button on:click={resetToCurrentTime}>Reset to today</button>
-
-    <svg
-      style="max-width: 90%; height: auto; margin: auto; border-radius: 3rem; padding: 2rem;"
+  
+  <svg
+  style="max-width: 90%; height: auto; margin: auto; border-radius: 3rem; padding: 2rem;"
+>
+  <defs>
+    <radialGradient
+      id="sphere-gradient"
+      cx="50%"
+      cy="50%"
+      r="50%"
+      fx="50%"
+      fy="50%"
     >
-      <defs>
-        <radialGradient
-          id="sphere-gradient"
-          cx="50%"
-          cy="50%"
-          r="50%"
-          fx="50%"
-          fy="50%"
-        >
-          <stop offset="0%" style="stop-color: #1f3c8f; stop-opacity: 1" />
-          <stop offset="90%" style="stop-color: #4e7ad8; stop-opacity: 1" />
-          <stop offset="100%" style="stop-color: #3ba7ff; stop-opacity: 1" />
-        </radialGradient>
-      </defs>
-      <path class="Sphere" />
-    </svg>
-  </div>
+      <stop offset="0%" style="stop-color: #1f3c8f; stop-opacity: 1" />
+      <stop offset="90%" style="stop-color: #4e7ad8; stop-opacity: 1" />
+      <stop offset="100%" style="stop-color: #3ba7ff; stop-opacity: 1" />
+    </radialGradient>
+  </defs>
+  <path class="Sphere" />
+</svg>
 </section>
-<div class="time-buttons">
-  <button on:click={() => advanceTimeByHours(5)}>+5 uur</button>
-  <button on:click={() => advanceTimeByHours(-5)}>-5 uur</button>
-</div>
 
-<div class="sun-info">
-  {#if sunrise && sunset}
-    <p><strong></strong> {selectedCountry}</p>
-    <p><strong>📍</strong> {selectedCity}</p>
-    <p><img src="/images/sunrise.svg" alt="Sunrise" /> {sunrise}</p>
-    <p><img src="/images/sunset.svg" alt="Sunset" /> {sunset}</p>
 
-    <div class="sun-info">
-      {#if sunrise && sunset}
-        <p><strong></strong> {selectedCountry}</p>
-        <p><strong>📍</strong> {selectedCity}</p>
-        <p><img src="/images/sunrise.svg" alt="Sunrise" /> {sunrise}</p>
-        <p><img src="/images/sunset.svg" alt="Sunset" /> {sunset}</p>
-        <p><img src="/images/clock.svg" alt="" /> {localTime}</p>
-      {:else}
-        <p>
-          Click on a country to see its sunrise, sunset, capital and local time.
-        </p>
-      {/if}
-    </div>
-    <p>{localTime}</p>
-  {:else}
-    <p>
-      Click on a country to see its sunrise, sunset, capital and local time.
-    </p>
-  {/if}
-</div>
+<TimeButtons  onAdvanceTime={advanceTimeByHours} />
+
+<SunInfo
+  {sunrise}
+  {sunset}
+  {localTime}
+  {selectedCountry}
+  {selectedCity}
+/>
