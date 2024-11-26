@@ -57,7 +57,7 @@ svg {
   fill: url("#sphere-gradient");
 }
 
-.land {
+.country {
   fill: lightgreen;
   stroke: rgba(0, 0, 0, 0.4);
   stroke-opacity: .1;
