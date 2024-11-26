@@ -25,19 +25,19 @@
   const SUNRISE_SUNSET_API_URL = "https://api.sunrisesunset.io/json";
 
   function updateSelectedDate(event) {
-  const newDate = new Date(event.target.value);
-  selectedDate = newDate.toISOString().slice(0, 10);
-  stopTimeUpdater();
-  updateSunAndNight();
-}
+    const newDate = new Date(event.target.value);
+    selectedDate = newDate.toISOString().slice(0, 10);
+    stopTimeUpdater();
+    updateSunAndNight();
+  }
 
   function updateSelectedTime(event) {
     selectedTime = event.target.value;
-    
+
     stopTimeUpdater();
 
     updateSunAndNight();
-}
+  }
   function combineDateTime(date, time) {
     const [hours, minutes] = time.split(":");
     const newDate = new Date(date);
@@ -45,18 +45,15 @@
     return newDate;
   }
 
-
   function resetToCurrentTime() {
-  const now = new Date(); 
-  selectedDate = now.toISOString().slice(0, 10); 
-  selectedTime = now.toTimeString().slice(0, 5); 
+    const now = new Date();
+    selectedDate = now.toISOString().slice(0, 10);
+    selectedTime = now.toTimeString().slice(0, 5);
 
-  updateSunAndNight();
-  stopTimeUpdater();
-  startTimeUpdater(updateToCurrentTime);
-}
-
-
+    updateSunAndNight();
+    stopTimeUpdater();
+    startTimeUpdater(updateToCurrentTime);
+  }
 
   function parseTimeToUTC(timeString) {
     const [time, modifier] = timeString.split(" ");
@@ -67,7 +64,6 @@
     date.setUTCHours(hours, minutes, seconds || 0, 0);
     return date;
   }
-
 
   async function fetchTimeZone(latitude, longitude) {
     const apiKey = process.env.TIMEZONE_API_KEY;
@@ -152,6 +148,19 @@
     }
   }
 
+  function advanceTimeByHours(hours) {
+    const currentDateTime = combineDateTime(selectedDate, selectedTime);
+    const updatedDateTime = new Date(
+      currentDateTime.getTime() + hours * 60 * 60 * 1000
+    );
+
+    selectedDate = updatedDateTime.toISOString().slice(0, 10);
+    selectedTime = updatedDateTime.toTimeString().slice(0, 5);
+
+    stopTimeUpdater(); 
+    updateSunAndNight(); 
+  }
+
   function haalHoofdstadOp(landId) {
     fetch(
       "https://raw.githubusercontent.com/samayo/country-json/refs/heads/master/src/country-by-capital-city.json"
@@ -200,7 +209,6 @@
     return [antipodeLongitude, antipodeLatitude];
   }
 
-  // Functies voor zonpositie en nachtzone
   function calculateSunPosition(date) {
     const now = new Date(date);
     const day = new Date(+now).setUTCHours(0, 0, 0, 0);
@@ -210,27 +218,34 @@
   }
 
   function createNightCircle(sun) {
-    const radius = 90; // in graden
+    const radius = 90; 
     const center = antipode(sun);
     return geoCircle().radius(radius).center(center)();
   }
 
   function updateSunAndNight() {
-    const sunPosition = calculateSunPosition(
-      combineDateTime(selectedDate, selectedTime)
-    );
-    const nightZone = createNightCircle(sunPosition);
+  const sunPosition = calculateSunPosition(
+    combineDateTime(selectedDate, selectedTime)
+  );
+  const nightZone = createNightCircle(sunPosition);
 
-    svgElement.selectAll(".night-zone").remove();
+  const nightZonePath = svgElement.selectAll(".night-zone");
+
+  if (nightZonePath.empty()) {
     svgElement
       .append("path")
       .datum(nightZone)
       .attr("class", "night-zone")
       .attr("d", cardPathGenerator)
-
       .style("stroke", "rgba(0, 0, 48, 0.9)")
       .attr("fill", "rgba(0, 0, 48, 0.9)");
+  } else {
+    nightZonePath
+      .datum(nightZone)
+      .attr("d", cardPathGenerator);
   }
+}
+
 
   onMount(() => {
     startTimeUpdater(updateToCurrentTime);
@@ -299,10 +314,10 @@
   <div class="date-time-input">
     <label for="date">Select a date:</label>
     <input
-    type="date"
-    id="date"
-    value={selectedDate} 
-    on:change={updateSelectedDate}
+      type="date"
+      id="date"
+      value={selectedDate}
+      on:change={updateSelectedDate}
     />
 
     <label for="time">Select a time:</label>
@@ -336,6 +351,10 @@
     </svg>
   </div>
 </section>
+<div class="time-buttons">
+  <button on:click={() => advanceTimeByHours(5)}>+5 uur</button>
+  <button on:click={() => advanceTimeByHours(-5)}>-5 uur</button>
+</div>
 
 <div class="sun-info">
   {#if sunrise && sunset}
