@@ -25,137 +25,7 @@
   //////////////////////////////////// 
 
 
-  ///////////////////////////////////////// 
-  // Geografische Gegevens en Interactie //
-  ///////////////////////////////////////// 
-
-  // Deze functie haalt de hoofdstad op voor een opgegeven land via een externe JSON API.
-  // Het ontvangt de land-id als parameter en maakt een fetch-aanroep naar een openbare API met een lijst van landen en hoofdsteden.
-  // Als de hoofdstad voor het opgegeven land wordt gevonden, wordt de geselecteerde stad (selectedCity) bijgewerkt en worden de coördinaten
-  // van de hoofdstad opgehaald via de functie fetchCoordinates. Als geen hoofdstad wordt gevonden voor het land, wordt een foutmelding weergegeven.
-  // In geval van een fetch-fout wordt er een foutmelding gelogd en wordt de geselecteerde stad ingesteld op "Error fetching capital city."
-  function fetchCountryCapital(countryId) {
-    fetch(
-      "https://raw.githubusercontent.com/samayo/country-json/refs/heads/master/src/country-by-capital-city.json"
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        const country = data.find((item) => item.country === countryId);
-        if (country) {
-          selectedCity = country.city;
-          fetchCoordinates(country.city);
-        } else {
-          selectedCity = `No capital found for ${countryId}`;
-        }
-      })
-      .catch((error) => {
-        console.error(
-          "Er is een fout opgetreden bij het ophalen van de hoofdsteden:",
-          error
-        );
-        selectedCity = "Error fetching capital city."; //
-      });
-  }
-
-  // Deze asynchrone functie haalt de geografische coördinaten (latitude en longitude) op voor een opgegeven stad.
-  // Het ontvangt de naam van een stad als parameter en maakt een verzoek naar de OpenStreetMap Nominatim API
-  // om de coördinaten van de stad te verkrijgen. Als de stad succesvol wordt gevonden, worden de coördinaten
-  // gebruikt om de functie fetchSunriseSunset aan te roepen met de opgehaalde breedte- en lengtegraad.
-  // Bij een mislukte zoekopdracht wordt er een foutmelding weergegeven.
-  async function fetchCoordinates(city) {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${city}&format=json&addressdetails=1`
-    );
-    const data = await response.json();
-    if (data && data.length > 0) {
-      const { lat, lon } = data[0];
-      fetchSunriseSunset(lat, lon);
-    } else {
-      console.error("Kon geen locatie vinden voor de ingevoerde stad.");
-    }
-  }
-
-  // Deze asynchrone functie haalt de tijdzone-informatie op op basis van geografische coördinaten (latitude, longitude).
-  // Het ontvangt de breedte- en lengtegraad als parameters en maakt een verzoek naar de TimeZoneDB API
-  // om de tijdzone en lokale tijd te verkrijgen. Als de API-aanroep succesvol is, wordt de tijdzone en
-  // lokale tijd geretourneerd. Bij fouten wordt er een foutmelding weergegeven en retourneert de functie null.
-  async function fetchTimeZone(latitude, longitude) {
-    const apiKey = process.env.TIMEZONE_API_KEY;
-    try {
-      const response = await fetch(
-        `https://api.timezonedb.com/v2.1/get-time-zone?key=${apiKey}&format=json&by=position&lat=${latitude}&lng=${longitude}`
-      );
-      const data = await response.json();
-
-      if (data.status === "OK") {
-        timezone = data.zoneName;
-        localTime = new Date(data.formatted).toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        return { timezone, localTime };
-      } else {
-        console.error("Kon tijdzonegegevens niet ophalen:", data.message);
-        return null;
-      }
-    } catch (error) {
-      console.error("Fout bij ophalen van tijdzone:", error);
-      return null;
-    }
-  }
-
-  // Deze asynchrone functie haalt de tijden van zonsopgang en zonsondergang op voor opgegeven geografische coördinaten (latitude, longitude).
-  // Het maakt een verzoek naar een API voor zonsopgang en zonsondergang (SUNRISE_SUNSET_API_URL) met de opgegeven coördinaten en tijdzone.
-  // Bij een succesvolle API-respons worden de tijden voor zonsopgang en zonsondergang in UTC opgehaald en omgezet naar de lokale tijdzone.
-  // De functie maakt vervolgens gebruik van de fetchTimeZone functie om de tijdzone van de locatie op te halen,
-  // en converteert de tijden naar de lokale tijd, die vervolgens wordt geformatteerd en opgeslagen in de variabelen `sunrise` en `sunset`.
-  // Bij fouten worden er foutmeldingen weergegeven.
-  async function fetchSunriseSunset(latitude, longitude) {
-    try {
-      const response = await fetch(
-        `${SUNRISE_SUNSET_API_URL}?lat=${latitude}&lng=${longitude}&timezone=UTC`
-      );
-      const data = await response.json();
-
-      if (data.status === "OK") {
-        await fetchTimeZone(latitude, longitude);
-        const sunriseUTC = parseTimeToUTC(data.results.sunrise);
-        const sunsetUTC = parseTimeToUTC(data.results.sunset);
-
-        try {
-          const localSunrise = new Date(
-            sunriseUTC.toLocaleString("en-US", { timeZone: timezone })
-          );
-          const localSunset = new Date(
-            sunsetUTC.toLocaleString("en-US", { timeZone: timezone })
-          );
-
-          sunrise = localSunrise.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          });
-
-          sunset = localSunset.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          });
-        } catch (error) {
-          console.error("Fout bij omzetten van tijd:", error);
-        }
-      } else {
-        console.error(
-          "Kon zonsopgang/zonsondergang gegevens niet ophalen:",
-          data
-        );
-      }
-    } catch (error) {
-      console.error("Er ging iets mis:", error);
-    }
-  }
-
-  /////////////////////////////////
+    /////////////////////////////////
   // Datum- en Tijdinstellingen //
   ///////////////////////////////
 
@@ -215,6 +85,119 @@
     startTimeUpdater(updateToCurrentTime);
   }
 
+  // Deze functie zet een tijdstring in 12-uurs formaat (met AM/PM) om naar een UTC Date-object.
+  // Het ontvangt een timeString als parameter in het formaat "HH:MM:SS AM/PM".
+  // De functie splitst de tijd en de AM/PM-modifier, past de uren aan afhankelijk van of het AM of PM is,
+  // en zet de resulterende tijd om naar een UTC Date-object. Het retourneert het Date-object in UTC.
+  function parseTimeToUTC(timeString) {
+    const [time, modifier] = timeString.split(" ");
+    let [hours, minutes, seconds] = time.split(":").map(Number);
+    if (modifier === "PM" && hours < 12) hours += 12;
+    if (modifier === "AM" && hours === 12) hours = 0;
+    const date = new Date();
+    date.setUTCHours(hours, minutes, seconds || 0, 0);
+    return date;
+  }
+
+  // Deze asynchrone functie haalt de tijdzone-informatie op op basis van geografische coördinaten (latitude, longitude).
+  // Het ontvangt de breedte- en lengtegraad als parameters en maakt een verzoek naar de TimeZoneDB API
+  // om de tijdzone en lokale tijd te verkrijgen. Als de API-aanroep succesvol is, wordt de tijdzone en
+  // lokale tijd geretourneerd. Bij fouten wordt er een foutmelding weergegeven en retourneert de functie null.
+  async function fetchTimeZone(latitude, longitude) {
+    const apiKey = process.env.TIMEZONE_API_KEY;
+    try {
+      const response = await fetch(
+        `https://api.timezonedb.com/v2.1/get-time-zone?key=${apiKey}&format=json&by=position&lat=${latitude}&lng=${longitude}`
+      );
+      const data = await response.json();
+
+      if (data.status === "OK") {
+        timezone = data.zoneName;
+        localTime = new Date(data.formatted).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        return { timezone, localTime };
+      } else {
+        console.error("Kon tijdzonegegevens niet ophalen:", data.message);
+        return null;
+      }
+    } catch (error) {
+      console.error("Fout bij ophalen van tijdzone:", error);
+      return null;
+    }
+  }
+
+  // Deze asynchrone functie haalt de geografische coördinaten (latitude en longitude) op voor een opgegeven stad.
+  // Het ontvangt de naam van een stad als parameter en maakt een verzoek naar de OpenStreetMap Nominatim API
+  // om de coördinaten van de stad te verkrijgen. Als de stad succesvol wordt gevonden, worden de coördinaten
+  // gebruikt om de functie fetchSunriseSunset aan te roepen met de opgehaalde breedte- en lengtegraad.
+  // Bij een mislukte zoekopdracht wordt er een foutmelding weergegeven.
+  async function fetchCoordinates(city) {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${city}&format=json&addressdetails=1`
+    );
+    const data = await response.json();
+    if (data && data.length > 0) {
+      const { lat, lon } = data[0];
+      fetchSunriseSunset(lat, lon);
+    } else {
+      console.error("Kon geen locatie vinden voor de ingevoerde stad.");
+    }
+  }
+
+  // Deze asynchrone functie haalt de tijden van zonsopgang en zonsondergang op voor opgegeven geografische coördinaten (latitude, longitude).
+  // Het maakt een verzoek naar een API voor zonsopgang en zonsondergang (SUNRISE_SUNSET_API_URL) met de opgegeven coördinaten en tijdzone.
+  // Bij een succesvolle API-respons worden de tijden voor zonsopgang en zonsondergang in UTC opgehaald en omgezet naar de lokale tijdzone.
+  // De functie maakt vervolgens gebruik van de fetchTimeZone functie om de tijdzone van de locatie op te halen,
+  // en converteert de tijden naar de lokale tijd, die vervolgens wordt geformatteerd en opgeslagen in de variabelen `sunrise` en `sunset`.
+  // Bij fouten worden er foutmeldingen weergegeven.
+  async function fetchSunriseSunset(latitude, longitude) {
+    try {
+      const response = await fetch(
+        `${SUNRISE_SUNSET_API_URL}?lat=${latitude}&lng=${longitude}&timezone=UTC`
+      );
+      const data = await response.json();
+
+      if (data.status === "OK") {
+        await fetchTimeZone(latitude, longitude);
+        const sunriseUTC = parseTimeToUTC(data.results.sunrise);
+        const sunsetUTC = parseTimeToUTC(data.results.sunset);
+
+        try {
+          const localSunrise = new Date(
+            sunriseUTC.toLocaleString("en-US", { timeZone: timezone })
+          );
+          const localSunset = new Date(
+            sunsetUTC.toLocaleString("en-US", { timeZone: timezone })
+          );
+
+          sunrise = localSunrise.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          });
+
+          sunset = localSunset.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+          });
+        } catch (error) {
+          console.error("Fout bij omzetten van tijd:", error);
+        }
+      } else {
+        console.error(
+          "Kon zonsopgang/zonsondergang gegevens niet ophalen:",
+          data
+        );
+      }
+    } catch (error) {
+      console.error("Er ging iets mis:", error);
+    }
+  }
+
+
   // Deze functie verschaft een manier om de geselecteerde tijd met een bepaald aantal uren vooruit of achteruit te verplaatsen.
   // Het ontvangt een parameter 'hours' die aangeeft hoeveel uren de tijd moet worden aangepast. De functie bepaalt of de tijd vooruit
   // (positief aantal uren) of achteruit (negatief aantal uren) moet worden verplaatst. Vervolgens wordt de tijd in kleine stappen
@@ -245,23 +228,58 @@
     updateTimeStep(1);
   }
 
-  ///////////////////////////////////////////////////
-  // Helpen met de Berekeningen voor Zon en Nacht //
-  /////////////////////////////////////////////////
 
-  // Deze functie zet een tijdstring in 12-uurs formaat (met AM/PM) om naar een UTC Date-object.
-  // Het ontvangt een timeString als parameter in het formaat "HH:MM:SS AM/PM".
-  // De functie splitst de tijd en de AM/PM-modifier, past de uren aan afhankelijk van of het AM of PM is,
-  // en zet de resulterende tijd om naar een UTC Date-object. Het retourneert het Date-object in UTC.
-  function parseTimeToUTC(timeString) {
-    const [time, modifier] = timeString.split(" ");
-    let [hours, minutes, seconds] = time.split(":").map(Number);
-    if (modifier === "PM" && hours < 12) hours += 12;
-    if (modifier === "AM" && hours === 12) hours = 0;
-    const date = new Date();
-    date.setUTCHours(hours, minutes, seconds || 0, 0);
-    return date;
+  // Deze functie haalt de hoofdstad op voor een opgegeven land via een externe JSON API.
+  // Het ontvangt de land-id als parameter en maakt een fetch-aanroep naar een openbare API met een lijst van landen en hoofdsteden.
+  // Als de hoofdstad voor het opgegeven land wordt gevonden, wordt de geselecteerde stad (selectedCity) bijgewerkt en worden de coördinaten
+  // van de hoofdstad opgehaald via de functie fetchCoordinates. Als geen hoofdstad wordt gevonden voor het land, wordt een foutmelding weergegeven.
+  // In geval van een fetch-fout wordt er een foutmelding gelogd en wordt de geselecteerde stad ingesteld op "Error fetching capital city."
+  function fetchCountryCapital(countryId) {
+    fetch(
+      "https://raw.githubusercontent.com/samayo/country-json/refs/heads/master/src/country-by-capital-city.json"
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        const country = data.find((item) => item.country === countryId);
+        if (country) {
+          selectedCity = country.city;
+          fetchCoordinates(country.city);
+        } else {
+          selectedCity = `No capital found for ${countryId}`;
+        }
+      })
+      .catch((error) => {
+        console.error(
+          "Er is een fout opgetreden bij het ophalen van de hoofdsteden:",
+          error
+        );
+        selectedCity = "Error fetching capital city."; //
+      });
   }
+
+  // Deze functie schaalt een SVG-kaart opnieuw op basis van de bounds van een geografische kaart.
+  // Het berekent de huidige grenzen van de kaart (bounds), waarbij de kaart wordt behandeld als een bol (Sphere).
+  // Vervolgens wordt de grootte van de kaart berekend door het verschil tussen de x- en y-coördinaten van de grenzen.
+  // De viewBox van het SVG-element wordt aangepast om de kaart met een extra padding te tonen, zodat de kaart goed zichtbaar is.
+  // De breedte en hoogte van het SVG-element worden ook aangepast om de nieuwe schaal en het aangepaste viewBox goed weer te geven.
+  function rescaleMapRender() {
+    const bounds = cardPathGenerator.bounds({ type: "Sphere" });
+    const [x0, y0] = bounds[0];
+    const [x1, y1] = bounds[1];
+    const width = x1 - x0;
+    const height = y1 - y0;
+
+    const padding = 20;
+
+    svgElement
+      .attr(
+        "viewBox",
+        `${x0 - padding} ${y0 - padding} ${width + padding * 2} ${height + padding * 2}`
+      )
+      .attr("width", width)
+      .attr("height", height);
+  }
+
 
   // Deze functie berekent de antipode (tegenovergestelde punt) van een opgegeven geografisch coördinaat.
   // Het ontvangt een array van coördinaten [longitude, latitude] als parameter.
@@ -286,30 +304,6 @@
     const t = solar.century(now);
     const longitude = ((day - now) / 864e5) * 360 - 180;
     return [longitude - solar.equationOfTime(t) / 4, solar.declination(t)];
-  }
-
-
-  // Deze functie schaalt een SVG-kaart opnieuw op basis van de bounds van een geografische kaart.
-  // Het berekent de huidige grenzen van de kaart (bounds), waarbij de kaart wordt behandeld als een bol (Sphere).
-  // Vervolgens wordt de grootte van de kaart berekend door het verschil tussen de x- en y-coördinaten van de grenzen.
-  // De viewBox van het SVG-element wordt aangepast om de kaart met een extra padding te tonen, zodat de kaart goed zichtbaar is.
-  // De breedte en hoogte van het SVG-element worden ook aangepast om de nieuwe schaal en het aangepaste viewBox goed weer te geven.
-  function rescaleMapRender() {
-    const bounds = cardPathGenerator.bounds({ type: "Sphere" });
-    const [x0, y0] = bounds[0];
-    const [x1, y1] = bounds[1];
-    const width = x1 - x0;
-    const height = y1 - y0;
-
-    const padding = 20;
-
-    svgElement
-      .attr(
-        "viewBox",
-        `${x0 - padding} ${y0 - padding} ${width + padding * 2} ${height + padding * 2}`
-      )
-      .attr("width", width)
-      .attr("height", height);
   }
 
   // Deze functie maakt een cirkel die het nachtgebied vertegenwoordigt op basis van de zonpositie.
