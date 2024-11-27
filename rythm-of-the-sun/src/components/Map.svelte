@@ -24,67 +24,6 @@
   // Kaart Initialiseren en Tekenen //
   //////////////////////////////////// 
 
-  // Deze functie schaalt een SVG-kaart opnieuw op basis van de bounds van een geografische kaart.
-  // Het berekent de huidige grenzen van de kaart (bounds), waarbij de kaart wordt behandeld als een bol (Sphere).
-  // Vervolgens wordt de grootte van de kaart berekend door het verschil tussen de x- en y-coördinaten van de grenzen.
-  // De viewBox van het SVG-element wordt aangepast om de kaart met een extra padding te tonen, zodat de kaart goed zichtbaar is.
-  // De breedte en hoogte van het SVG-element worden ook aangepast om de nieuwe schaal en het aangepaste viewBox goed weer te geven.
-  function rescaleMapRender() {
-    const bounds = cardPathGenerator.bounds({ type: "Sphere" });
-    const [x0, y0] = bounds[0];
-    const [x1, y1] = bounds[1];
-    const width = x1 - x0;
-    const height = y1 - y0;
-
-    const padding = 20;
-
-    svgElement
-      .attr(
-        "viewBox",
-        `${x0 - padding} ${y0 - padding} ${width + padding * 2} ${height + padding * 2}`
-      )
-      .attr("width", width)
-      .attr("height", height);
-  }
-
-  // Deze functie maakt een cirkel die het nachtgebied vertegenwoordigt op basis van de zonpositie.
-  // Het ontvangt de zonpositie (sun) als parameter, die een array van coördinaten [longitude, latitude] is.
-  // De functie berekent de antipode (het tegenovergestelde punt) van de zonpositie met behulp van de antipode functie,
-  // en gebruikt deze coördinaten als het middelpunt van de cirkel.
-  // De cirkel wordt gemaakt met een straal van 90 graden, wat meestal overeenkomt met een groot deel van de nachtelijke hemisfeer.
-  // De functie retourneert de gemaakte cirkel als een geoCircle object.
-  function createNightCircle(sun) {
-    const radius = 90;
-    const center = antipode(sun);
-    return geoCircle().radius(radius).center(center)();
-  }
-
-  // Deze functie werkt de weergave van de zon- en nachtzone bij op basis van de geselecteerde datum en tijd.
-  // Eerst berekent de functie de zonpositie door de geselecteerde datum en tijd te combineren met de functie calculateSunPosition.
-  // Vervolgens maakt de functie een nachtzone (de antipodale regio van de zon) door de functie createNightCircle aan te roepen.
-  // Het zoekt vervolgens naar een bestaand pad met de klasse ".night-zone" in de SVG. Als zo'n pad nog niet bestaat,
-  // wordt er een nieuw pad toegevoegd met de juiste vorm (d) en stijlen voor de nachtzone.
-  // Als het pad al bestaat, wordt het bijgewerkt met de nieuwe nachtzone gegevens.
-  function updateSunAndNight() {
-    const sunPosition = calculateSunPosition(
-      combineDateTime(selectedDate, selectedTime)
-    );
-    const nightZone = createNightCircle(sunPosition);
-
-    const nightZonePath = svgElement.selectAll(".night-zone");
-
-    if (nightZonePath.empty()) {
-      svgElement
-        .append("path")
-        .datum(nightZone)
-        .attr("class", "night-zone")
-        .attr("d", cardPathGenerator)
-        .style("stroke", "rgba(0, 0, 48, 0.9)")
-        .attr("fill", "rgba(0, 0, 48, 0.9)");
-    } else {
-      nightZonePath.datum(nightZone).attr("d", cardPathGenerator);
-    }
-  }
 
   ///////////////////////////////////////// 
   // Geografische Gegevens en Interactie //
@@ -144,7 +83,7 @@
     const apiKey = process.env.TIMEZONE_API_KEY;
     try {
       const response = await fetch(
-        `http://api.timezonedb.com/v2.1/get-time-zone?key=${apiKey}&format=json&by=position&lat=${latitude}&lng=${longitude}`
+        `https://api.timezonedb.com/v2.1/get-time-zone?key=${apiKey}&format=json&by=position&lat=${latitude}&lng=${longitude}`
       );
       const data = await response.json();
 
@@ -347,6 +286,69 @@
     const t = solar.century(now);
     const longitude = ((day - now) / 864e5) * 360 - 180;
     return [longitude - solar.equationOfTime(t) / 4, solar.declination(t)];
+  }
+
+
+  // Deze functie schaalt een SVG-kaart opnieuw op basis van de bounds van een geografische kaart.
+  // Het berekent de huidige grenzen van de kaart (bounds), waarbij de kaart wordt behandeld als een bol (Sphere).
+  // Vervolgens wordt de grootte van de kaart berekend door het verschil tussen de x- en y-coördinaten van de grenzen.
+  // De viewBox van het SVG-element wordt aangepast om de kaart met een extra padding te tonen, zodat de kaart goed zichtbaar is.
+  // De breedte en hoogte van het SVG-element worden ook aangepast om de nieuwe schaal en het aangepaste viewBox goed weer te geven.
+  function rescaleMapRender() {
+    const bounds = cardPathGenerator.bounds({ type: "Sphere" });
+    const [x0, y0] = bounds[0];
+    const [x1, y1] = bounds[1];
+    const width = x1 - x0;
+    const height = y1 - y0;
+
+    const padding = 20;
+
+    svgElement
+      .attr(
+        "viewBox",
+        `${x0 - padding} ${y0 - padding} ${width + padding * 2} ${height + padding * 2}`
+      )
+      .attr("width", width)
+      .attr("height", height);
+  }
+
+  // Deze functie maakt een cirkel die het nachtgebied vertegenwoordigt op basis van de zonpositie.
+  // Het ontvangt de zonpositie (sun) als parameter, die een array van coördinaten [longitude, latitude] is.
+  // De functie berekent de antipode (het tegenovergestelde punt) van de zonpositie met behulp van de antipode functie,
+  // en gebruikt deze coördinaten als het middelpunt van de cirkel.
+  // De cirkel wordt gemaakt met een straal van 90 graden, wat meestal overeenkomt met een groot deel van de nachtelijke hemisfeer.
+  // De functie retourneert de gemaakte cirkel als een geoCircle object.
+  function createNightCircle(sun) {
+    const radius = 90;
+    const center = antipode(sun);
+    return geoCircle().radius(radius).center(center)();
+  }
+
+  // Deze functie werkt de weergave van de zon- en nachtzone bij op basis van de geselecteerde datum en tijd.
+  // Eerst berekent de functie de zonpositie door de geselecteerde datum en tijd te combineren met de functie calculateSunPosition.
+  // Vervolgens maakt de functie een nachtzone (de antipodale regio van de zon) door de functie createNightCircle aan te roepen.
+  // Het zoekt vervolgens naar een bestaand pad met de klasse ".night-zone" in de SVG. Als zo'n pad nog niet bestaat,
+  // wordt er een nieuw pad toegevoegd met de juiste vorm (d) en stijlen voor de nachtzone.
+  // Als het pad al bestaat, wordt het bijgewerkt met de nieuwe nachtzone gegevens.
+  function updateSunAndNight() {
+    const sunPosition = calculateSunPosition(
+      combineDateTime(selectedDate, selectedTime)
+    );
+    const nightZone = createNightCircle(sunPosition);
+
+    const nightZonePath = svgElement.selectAll(".night-zone");
+
+    if (nightZonePath.empty()) {
+      svgElement
+        .append("path")
+        .datum(nightZone)
+        .attr("class", "night-zone")
+        .attr("d", cardPathGenerator)
+        .style("stroke", "rgba(0, 0, 48, 0.9)")
+        .attr("fill", "rgba(0, 0, 48, 0.9)");
+    } else {
+      nightZonePath.datum(nightZone).attr("d", cardPathGenerator);
+    }
   }
 
     // De onMount functie wordt uitgevoerd zodra de component wordt geladen en gemonteerd.
