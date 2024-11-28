@@ -69,3 +69,42 @@ Quickly reset the visualization to the current time and date.
 <li><a style="color: goldenrod;" href="https://www.openstreetmap.org/#map=7/52.154/5.295">OpenStreetMap</a></li>
 </ul>
 
+# ☀️ Project Structure
+
+<b>src/components:</b>
+
+`TimeAndDate.svelte`
+Date and time picker component.
+
+`SunInfo.svelte`
+ Displays calculated sunrise and sunset times.
+
+`TimeButtons.svelte`
+ Provides quick adjustments to time.
+
+<b>src/lib</b>
+
+`toonLand.js`
+ Functions for map rendering and country interaction.
+
+`updateTijd.js`
+ Real-time updater for managing date and time.
+
+ # ☀️ Environment Variables
+
+The project uses `environment variables` for API keys:
+
+`TIMEZONE_API_KEY:`
+ API key for TimeZoneDB.
+To set up, create a .env file in the root directory with the following content:
+makefile
+Code kopiëren
+
+
+# ☀️ License
+
+This project is licensed under the MIT License.
+
+# ☀️ Author
+
+© It's by Ali 2024
