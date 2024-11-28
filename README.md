@@ -2,12 +2,21 @@
 
 Rhythm of The Sun is an interactive visualization tool built with Svelte and D3.js that maps the Earth's countries and provides detailed information about the sun's behavior at various locations and times. Users can explore sunrise, sunset times, and night zones dynamically on a beautiful globe visualization.
 
-### ☀️ Features
+## ☀️ Features
+
+| Feature | Description |
+| :-- | :--- |
+| Interactive World Map | Rendered with D3.js using the Natural Earth projection. Click on a country to fetch its capital city and geographic information. |
+| Sunrise & Sunset Calculation | Fetches sunrise and sunset times for any location via API. Converts these times to the local timezone for better understanding. |
+| Dynamic Date & Time Controls | Users can update the date and time to see how the sun's position changes. Includes "reset to current time" functionality. |
+| Night Zone Visualization | Displays the night area on the map dynamically based on the current time.|
+| Real-Time Updates| The map updates the sun's position and night zones every minute. |
+| Antipodal Calculations | Calculate the exact opposite point on the Earth's surface for any given location.|
 
 Ensure you have the following installed:
 
-- Node.js (v14 or later)
-- npm
+- <b>Node.js (v14 or later)</b>
+- <b>npm</b>
 
 ## ☀️ Clone the repository
 
@@ -35,7 +44,7 @@ npm run dev -- --open
 
 <hr>
 
-# ☀️ Usage
+## ☀️ Usage
 
 ✨ <b>Explore the Map</b> ✨
 
@@ -53,7 +62,7 @@ Observe the dynamically updated night zones based on the sun's position.
 
 Quickly reset the visualization to the current time and date.
 
-# ☀️ Technologies
+## ☀️ Technologies
 
 ### <p style="display: flex; gap: .5rem; align-items:center;"><img width="5%" src="https://github.com/user-attachments/assets/40580d89-641f-4b61-b72b-d26e07440ea4" alt="Svelte-icon"/> Svelte</p>
 
@@ -61,7 +70,7 @@ Quickly reset the visualization to the current time and date.
 
 <br>
 
-# ☀️ APIs
+## ☀️ APIs
 
 <ul>
 <li><a style="color: goldenrod;" href="https://sunrisesunset.io/">SunriseSunset API</a></li>
@@ -69,7 +78,7 @@ Quickly reset the visualization to the current time and date.
 <li><a style="color: goldenrod;" href="https://www.openstreetmap.org/#map=7/52.154/5.295">OpenStreetMap</a></li>
 </ul>
 
-# ☀️ Project Structure
+## ☀️ Project Structure
 
 <b>src/components:</b>
 
@@ -90,7 +99,7 @@ Date and time picker component.
 `updateTijd.js`
  Real-time updater for managing date and time.
 
- # ☀️ Environment Variables
+ ## ☀️ Environment Variables
 
 The project uses `environment variables` for API keys:
 
@@ -101,10 +110,10 @@ makefile
 Code kopiëren
 
 
-# ☀️ License
+## ☀️ License
 
 This project is licensed under the MIT License.
 
-# ☀️ Author
+## ☀️ Author
 
 © It's by Ali 2024
