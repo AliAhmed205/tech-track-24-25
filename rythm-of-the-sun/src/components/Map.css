@@ -57,6 +57,11 @@ body {
 
 .Sphere {
   fill: url("#sphere-gradient");
+  pointer-events: none;
+}
+
+.night-zone {
+  pointer-events: none;
 }
 
 .country {
@@ -65,6 +70,8 @@ body {
   stroke-opacity: .1;
   transition: .2s;
   color: #3ba7ff;
+
+
 
 
   &:hover {
