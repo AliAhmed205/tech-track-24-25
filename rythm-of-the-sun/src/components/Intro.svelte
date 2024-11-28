@@ -19,6 +19,7 @@
     Welcome to the <b>Rythm of The Sun</b> visualisation. A real-time visualisation
     of the sun, shining on the earth. Experiment by changing the months of by going
     forward in time through the hours.
+    <b>You might need to refresh for the nightzone to be rendered!</b>
   </p>
   <button type="button">Start</button>
 </section>
