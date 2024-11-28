@@ -20,15 +20,6 @@
   let selectedTime = selectedDate.toTimeString().slice(0, 5);
   const SUNRISE_SUNSET_API_URL = "https://api.sunrisesunset.io/json";
 
-  //////////////////////////////////// 
-  // Kaart Initialiseren en Tekenen //
-  //////////////////////////////////// 
-
-
-    /////////////////////////////////
-  // Datum- en Tijdinstellingen //
-  ///////////////////////////////
-
   // Deze functie ontvangt de huidige datum en tijd (nu) als parameter,
   // en werkt de geselecteerde datum en tijd bij op basis van de opgegeven waarde.
   // Daarna wordt de functie updateSunAndNight() aangeroepen om de zon- en nachtstatus bij te werken.
@@ -365,6 +356,7 @@
         const countryNames = {}; // Object om landnamen op te slaan, geïdentificeerd door hun ISO-codes
         countryData.forEach((country) => {
           countryNames[country.iso_n3] = country.name; // Voeg elk land toe aan het landNamen object
+
         });
 
         // Converteer geografische data naar een array van landen
